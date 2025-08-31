@@ -2,11 +2,24 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <link rel="icon" type="image/svg+xml" href="/second-brain/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Vite + React + TS</title>
-    <script type="module" crossorigin src="/assets/index-CcV-EsGi.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/index-Bt1d2jJX.css">
+    <title>Second Brain - 나의 두 번째 뇌</title>
+    <script type="text/javascript">
+      // GitHub Pages SPA redirect hack
+      (function(l) {
+        if (l.search[1] === '/' ) {
+          var decoded = l.search.slice(1).split('&').map(function(s) { 
+            return s.replace(/~and~/g, '&')
+          }).join('?');
+          window.history.replaceState(null, null,
+              l.pathname.slice(0, -1) + decoded + l.hash
+          );
+        }
+      }(window.location))
+    </script>
+    <script type="module" crossorigin src="/second-brain/assets/index-6fLVq7SS.js"></script>
+    <link rel="stylesheet" crossorigin href="/second-brain/assets/index-D0QsUOID.css">
   </head>
   <body>
     <div id="root"></div>
