@@ -39,11 +39,11 @@ export const Header: React.FC = () => {
             
             {isGoogleSignedIn ? (
               <button onClick={handleSignoutClick} className="btn-secondary">
-                캘린더 연동 해제
+                ❌
               </button>
             ) : (
               <button onClick={handleAuthClick} className="btn-primary">
-                캘린더 연동
+                📅
               </button>
             )}
 

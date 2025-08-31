@@ -20,6 +20,10 @@ export const getIsGoogleSignedIn = () => isGoogleSignedIn;
 const initializeGis = () => {
   return new Promise<void>((resolve, reject) => {
     try {
+      if (typeof google === 'undefined') {
+        reject(new Error("Google Identity Services script not loaded."));
+        return;
+      }
       tokenClient = google.accounts.oauth2.initTokenClient({
         client_id: CLIENT_ID,
         scope: SCOPES,
@@ -55,7 +59,6 @@ const initializeGapi = () => {
 
 /**
  * Google Calendar 서비스 초기화를 담당합니다.
- * GAPI와 GIS 스크립트를 로드하고 초기화합니다.
  */
 export const initClient = async (onAuthChange: (isSignedIn: boolean) => void) => {
   await initializeGapi();
@@ -64,19 +67,28 @@ export const initClient = async (onAuthChange: (isSignedIn: boolean) => void) =>
   // GIS 스크립트가 로드되면 gapi.client의 토큰을 설정합니다.
   tokenClient.callback = (resp) => {
     if (resp.error !== undefined) {
-      throw(resp);
+      // Handle errors during silent token retrieval or user interaction
+      console.error("Google token retrieval error:", resp.error);
+      onAuthChange(false); // Ensure signed out state
+      return;
     }
     gapi.client.setToken({ access_token: resp.access_token });
     isGoogleSignedIn = true;
     onAuthChange(true);
   };
+  
+  // 앱 로드 시 기존 세션이 있는지 확인하고 토큰을 자동으로 가져옵니다.
+  tokenClient.requestAccessToken({ prompt: '' });
 };
 
-
 /**
- * Google 인증을 요청하고 토큰을 가져옵니다.
+ * Google 인증을 요청합니다.
  */
 export const handleAuthClick = () => {
+  if (!tokenClient) {
+    console.error('Google API client is not ready yet.');
+    return;
+  }
   if (gapi.client.getToken() === null) {
     tokenClient.requestAccessToken({ prompt: 'consent' });
   } else {
@@ -88,6 +100,10 @@ export const handleAuthClick = () => {
  * Google 인증 세션을 종료합니다.
  */
 export const handleSignoutClick = () => {
+  if (typeof google === 'undefined') {
+    console.error('Google Identity Services script not loaded yet.');
+    return;
+  }
   const token = gapi.client.getToken();
   if (token !== null) {
     google.accounts.oauth2.revoke(token.access_token, () => {
@@ -97,36 +113,57 @@ export const handleSignoutClick = () => {
   }
 };
 
+const createEventResource = (summary: string, dueDate?: Date) => ({
+  'summary': summary,
+  'start': {
+    'date': dueDate ? dueDate.toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
+  },
+  'end': {
+    'date': dueDate ? dueDate.toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
+  },
+});
+
 /**
  * Google Calendar에 이벤트를 생성합니다.
- * @param summary 이벤트 제목
- * @returns 생성된 이벤트 정보
  */
-export const createEvent = async (summary: string) => {
-  const event = {
-    'summary': summary,
-    'start': {
-      'dateTime': new Date().toISOString(),
-      'timeZone': 'Asia/Seoul'
-    },
-    'end': {
-      'dateTime': new Date(Date.now() + 3600 * 1000).toISOString(), // 1시간 후
-      'timeZone': 'Asia/Seoul'
-    },
-  };
-
+export const createEvent = async (summary: string, dueDate?: Date) => {
+  const event = createEventResource(summary, dueDate);
   const request = gapi.client.calendar.events.insert({
     'calendarId': 'primary',
     'resource': event,
   });
 
   return new Promise((resolve, reject) => {
-    request.execute(event => {
-      if (event.error) {
-        reject(event.error);
-      } else {
-        resolve(event);
-      }
-    });
+    request.execute(event => event.error ? reject(event.error) : resolve(event));
+  });
+};
+
+/**
+ * Google Calendar의 이벤트를 수정합니다.
+ */
+export const updateEvent = async (eventId: string, summary: string, dueDate?: Date) => {
+  const event = createEventResource(summary, dueDate);
+  const request = gapi.client.calendar.events.update({
+    'calendarId': 'primary',
+    'eventId': eventId,
+    'resource': event,
+  });
+
+  return new Promise((resolve, reject) => {
+    request.execute(event => event.error ? reject(event.error) : resolve(event));
+  });
+};
+
+/**
+ * Google Calendar의 이벤트를 삭제합니다.
+ */
+export const deleteEvent = async (eventId: string) => {
+  const request = gapi.client.calendar.events.delete({
+    'calendarId': 'primary',
+    'eventId': eventId,
+  });
+
+  return new Promise((resolve, reject) => {
+    request.execute(result => result.error ? reject(result.error) : resolve(result));
   });
 };

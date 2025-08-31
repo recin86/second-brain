@@ -4,6 +4,8 @@ export interface ClassificationResult {
   icon: string;
   description: string;
   tags?: string[];
+  dueDate?: Date;
+  statusMessage: string;
 }
 
 import { classifyRadiologyInput, extractTags, removeTagsFromContent } from './tagParser';
@@ -14,15 +16,36 @@ export function classifyInput(input: string): ClassificationResult {
   // Check for Radiology note first
   const radiologyResult = classifyRadiologyInput(trimmed);
   if (radiologyResult) {
-    return radiologyResult;
+    return {
+      ...radiologyResult,
+      statusMessage: '영상의학에 저장됩니다'
+    };
   }
   
   if (trimmed.endsWith(';')) {
+    let content = trimmed.slice(0, -1).trim();
+    let dueDate: Date | undefined = undefined;
+
+    const dateRegex = /\s@(.+)$/;
+    const match = content.match(dateRegex);
+
+    if (match && match[1]) {
+      const dateString = match[1];
+      const parsedDate = new Date(dateString);
+      // 유효한 날짜인지 확인. Invalid Date가 아니어야 함.
+      if (!isNaN(parsedDate.getTime())) {
+        dueDate = parsedDate;
+        content = content.replace(dateRegex, '').trim();
+      }
+    }
+
     return {
       type: 'todo',
-      content: trimmed.slice(0, -1).trim(),
+      content: content,
       icon: '✅',
-      description: '할 일로 저장 + 캘린더 등록'
+      description: dueDate ? `할 일로 저장 (마감일: ${dueDate.toLocaleDateString()})` : '할 일로 저장 + 캘린더 등록',
+      dueDate: dueDate,
+      statusMessage: '내 할 일에 저장됩니다'
     };
   }
   
@@ -30,6 +53,7 @@ export function classifyInput(input: string): ClassificationResult {
     type: 'thought',
     content: trimmed,
     icon: '💭',
-    description: '내 생각으로 저장'
+    description: '내 생각으로 저장',
+    statusMessage: '내 생각에 저장됩니다'
   };
 }

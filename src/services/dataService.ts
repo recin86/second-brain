@@ -4,7 +4,7 @@ import { FirestoreService } from './firestore';
 import { DataMigration } from '../utils/dataMigration';
 import type { Thought, Todo, RadiologyNote } from '../types';
 
-import { getIsGoogleSignedIn, createEvent } from './googleCalendar';
+import { getIsGoogleSignedIn, createEvent, updateEvent, deleteEvent } from './googleCalendar';
 
 // 통합 데이터 서비스 클래스
 export class DataService {
@@ -102,17 +102,19 @@ export class DataService {
     return storage.getTodos();
   }
 
-  async addTodo(content: string): Promise<Todo> {
+  async addTodo(content: string, dueDate?: Date): Promise<Todo> {
     const localTodo = storage.addTodo(content);
 
     if (this.firestoreService && this.isOnline) {
       try {
-        const newTodo = await this.firestoreService.addTodo(content);
+        const newTodo = await this.firestoreService.addTodo(content, dueDate);
         
         if (getIsGoogleSignedIn()) {
           try {
-            const calendarEvent: any = await createEvent(content);
-            await this.firestoreService.updateTodo(newTodo.id, { googleEventId: calendarEvent.id });
+            if (dueDate) { // 마감일이 있을 때만 캘린더 이벤트 생성
+              const calendarEvent: any = await createEvent(content, dueDate);
+              await this.firestoreService.updateTodo(newTodo.id, { googleEventId: calendarEvent.id });
+            }
           } catch (error) {
             console.error('Failed to create Google Calendar event:', error);
           }
@@ -128,11 +130,34 @@ export class DataService {
   }
 
   async updateTodo(id: string, updates: Partial<Todo>): Promise<void> {
+    // 캘린더 동기화 로직
+    if (this.firestoreService && getIsGoogleSignedIn() && updates.hasOwnProperty('dueDate')) {
+      const currentTodo = await this.firestoreService.getTodoById(id);
+      if (currentTodo) {
+        const { googleEventId, content } = currentTodo;
+        const newDueDate = updates.dueDate;
+
+        try {
+          if (newDueDate && !googleEventId) {
+            const newEvent: any = await createEvent(content, newDueDate);
+            updates.googleEventId = newEvent.id;
+          } else if (newDueDate && googleEventId) {
+            await updateEvent(googleEventId, content, newDueDate);
+          } else if (!newDueDate && googleEventId) {
+            await deleteEvent(googleEventId);
+            updates.googleEventId = '';
+          }
+        } catch (error) {
+          console.error('Google Calendar sync failed during update:', error);
+        }
+      }
+    }
+
     // 로컬 업데이트
     if (updates.hasOwnProperty('isCompleted')) {
       storage.toggleTodo(id);
     }
-    if (updates.dueDate !== undefined) {
+    if (updates.hasOwnProperty('dueDate')) {
       storage.updateTodoDueDate(id, updates.dueDate);
     }
     if (updates.priority) {

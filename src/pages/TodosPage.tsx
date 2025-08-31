@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { storage } from '../utils/storage';
+import React, { useState, useEffect, useRef } from 'react';
+import { dataService } from '../services/dataService';
 import type { Todo } from '../types';
 import { useLanguage } from '../contexts/LanguageContext';
+import debounce from '../utils/debounce';
 
 export const TodosPage: React.FC = () => {
   const { t } = useLanguage();
@@ -9,12 +10,41 @@ export const TodosPage: React.FC = () => {
   const [filter, setFilter] = useState<'all' | 'pending' | 'completed'>('all');
 
   useEffect(() => {
-    setTodos(storage.getTodos());
+    // 실시간으로 Todos 데이터 구독
+    const unsubscribe = dataService.subscribeToTodos(setTodos);
+    // 컴포넌트 언마운트 시 구독 해제
+    return () => unsubscribe();
   }, []);
 
   const handleToggleComplete = (id: string) => {
-    storage.toggleTodo(id);
-    setTodos(storage.getTodos());
+    const todo = todos.find(t => t.id === id);
+    if (todo) {
+      dataService.updateTodo(id, { isCompleted: !todo.isCompleted });
+    }
+  };
+
+  const debouncedUpdateTodoRef = useRef(
+    debounce((id: string, updates: Partial<Todo>) => {
+      dataService.updateTodo(id, updates);
+    }, 500) // 500ms debounce delay
+  );
+
+  const handleSetDueDate = (todoId: string, event: React.ChangeEvent<HTMLInputElement>) => {
+    const dueDate = event.target.value ? new Date(event.target.value) : undefined;
+    debouncedUpdateTodoRef.current(todoId, { dueDate });
+  };
+
+  const handleSetPriority = (todoId: string, currentPriority: Todo['priority']) => {
+    const priorities: Todo['priority'][] = ['low', 'medium', 'high'];
+    const currentIndex = priorities.indexOf(currentPriority);
+    const nextIndex = (currentIndex + 1) % priorities.length;
+    dataService.updateTodo(todoId, { priority: priorities[nextIndex] });
+  };
+
+  const handleDeleteTodo = (id: string) => {
+    if (window.confirm(t('todos.delete_confirm'))) {
+      dataService.deleteTodo(id);
+    }
   };
 
   const filteredTodos = todos.filter(todo => {
@@ -24,12 +54,10 @@ export const TodosPage: React.FC = () => {
   });
 
   const sortedTodos = [...filteredTodos].sort((a, b) => {
-    // 미완료 항목(false)이 완료 항목(true)보다 먼저 오도록 정렬
     if (a.isCompleted === b.isCompleted) {
-      // 완료 상태가 같으면 생성 시간 역순으로 정렬 (가장 최근에 생성된 것이 먼저 오도록)
       return b.createdAt.getTime() - a.createdAt.getTime();
     }
-    return a.isCompleted ? 1 : -1; // a가 완료이면 b 뒤로, 아니면 b 앞으로
+    return a.isCompleted ? 1 : -1;
   });
 
   const pendingCount = todos.filter(t => !t.isCompleted).length;
@@ -41,12 +69,6 @@ export const TodosPage: React.FC = () => {
       month: 'short',
       day: 'numeric',
     }).format(date);
-  };
-
-  const handleSetDueDate = (todoId: string, event: React.ChangeEvent<HTMLInputElement>) => {
-    const dueDate = event.target.value ? new Date(event.target.value) : undefined;
-    storage.updateTodoDueDate(todoId, dueDate);
-    setTodos(storage.getTodos());
   };
 
   const getPriorityColor = (priority: Todo['priority']) => {
@@ -65,14 +87,6 @@ export const TodosPage: React.FC = () => {
       case 'low': return t('todos.priority.low');
       default: return t('todos.priority.medium');
     }
-  };
-
-  const handleSetPriority = (todoId: string, currentPriority: Todo['priority']) => {
-    const priorities: Todo['priority'][] = ['low', 'medium', 'high'];
-    const currentIndex = priorities.indexOf(currentPriority);
-    const nextIndex = (currentIndex + 1) % priorities.length;
-    storage.updateTodoPriority(todoId, priorities[nextIndex]);
-    setTodos(storage.getTodos());
   };
 
   return (
@@ -130,14 +144,8 @@ export const TodosPage: React.FC = () => {
               key={todo.id}
               className={`card card-hover relative group ${todo.isCompleted ? 'opacity-60' : ''}`}
             >
-              {/* 삭제 버튼 - 카드 상단 우측으로 이동 */}
               <button
-                onClick={() => {
-                  if (window.confirm(t('todos.delete_confirm'))) {
-                    storage.deleteTodo(todo.id);
-                    setTodos(storage.getTodos());
-                  }
-                }}
+                onClick={() => handleDeleteTodo(todo.id)}
                 className="text-muted hover:text-red-600 absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10"
                 aria-label="Delete todo"
               >

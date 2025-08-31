@@ -92,13 +92,14 @@ export class FirestoreService {
     })) as Todo[];
   }
 
-  async addTodo(content: string): Promise<Todo> {
+  async addTodo(content: string, dueDate?: Date): Promise<Todo> {
     const collectionRef = collection(db, getUserCollectionPath(this.userId, 'todos'));
     const todoData = {
       content: content.trim(),
       isCompleted: false,
       priority: 'medium' as const,
       createdAt: serverTimestamp(),
+      ...(dueDate && { dueDate: Timestamp.fromDate(dueDate) })
     };
 
     const docRef = await addDoc(collectionRef, todoData);
@@ -126,6 +127,23 @@ export class FirestoreService {
   async deleteTodo(todoId: string): Promise<void> {
     const docRef = doc(db, getUserCollectionPath(this.userId, 'todos'), todoId);
     await deleteDoc(docRef);
+  }
+
+  async getTodoById(todoId: string): Promise<Todo | null> {
+    const docRef = doc(db, getUserCollectionPath(this.userId, 'todos'), todoId);
+    const docSnap = await getDoc(docRef);
+
+    if (!docSnap.exists()) {
+      return null;
+    }
+
+    const data = docSnap.data();
+    return {
+      id: docSnap.id,
+      ...data,
+      createdAt: convertFirestoreTimestamp(data.createdAt),
+      dueDate: data.dueDate ? convertFirestoreTimestamp(data.dueDate) : undefined
+    } as Todo;
   }
 
   // Radiology Notes CRUD

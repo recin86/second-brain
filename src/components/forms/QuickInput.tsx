@@ -41,7 +41,7 @@ export const QuickInput: React.FC<QuickInputProps> = ({ onEntryAdded }) => {
         const result = classifyInput(input);
         
         if (result.type === 'todo') {
-          await dataService.addTodo(result.content);
+          await dataService.addTodo(result.content, result.dueDate);
         } else if (result.type === 'radiology') {
           await dataService.addRadiologyNote(result.content, result.tags || []);
         } else {
@@ -89,6 +89,12 @@ export const QuickInput: React.FC<QuickInputProps> = ({ onEntryAdded }) => {
             disabled={isSubmitting}
           />
         </div>
+        
+                {classification && (
+          <div className="text-left text-sm text-white mt-2">
+            {classification.icon} {classification.statusMessage}
+          </div>
+        )}
         
         {isSubmitting && (
           <div className="flex items-center justify-center pt-4">
