@@ -22,16 +22,16 @@ export const auth = getAuth(app);
 export const db = getFirestore(app);
 
 // Development/Demo mode setup
-if (import.meta.env.DEV && !import.meta.env.VITE_FIREBASE_API_KEY) {
-  console.log('🔥 Running in demo mode with Firebase emulators');
+// if (import.meta.env.DEV && !import.meta.env.VITE_FIREBASE_API_KEY) {
+//   console.log('🔥 Running in demo mode with Firebase emulators');
   
-  // Connect to emulators in development
-  try {
-    connectAuthEmulator(auth, 'http://localhost:9099', { disableWarnings: true });
-    connectFirestoreEmulator(db, 'localhost', 8080);
-  } catch (error) {
-    console.warn('Firebase emulators not available, using demo mode');
-  }
-}
+//   // Connect to emulators in development
+//   try {
+//     connectAuthEmulator(auth, 'http://localhost:9099', { disableWarnings: true });
+//     connectFirestoreEmulator(db, 'localhost', 8080);
+//   } catch (error) {
+//     console.warn('Firebase emulators not available, using demo mode');
+//   }
+// }
 
 export default app;
