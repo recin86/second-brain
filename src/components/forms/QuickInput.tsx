@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { classifyInput } from '../../utils/classifier';
 import type { ClassificationResult } from '../../utils/classifier';
-import { storage } from '../../utils/storage';
+import { dataService } from '../../services/dataService';
 import { useLanguage } from '../../contexts/LanguageContext';
 
 interface QuickInputProps {
@@ -41,11 +41,11 @@ export const QuickInput: React.FC<QuickInputProps> = ({ onEntryAdded }) => {
         const result = classifyInput(input);
         
         if (result.type === 'todo') {
-          storage.addTodo(result.content);
+          await dataService.addTodo(result.content);
         } else if (result.type === 'radiology') {
-          storage.addRadiologyNote(result.content, result.tags || []);
+          await dataService.addRadiologyNote(result.content, result.tags || []);
         } else {
-          storage.addThought(result.content);
+          await dataService.addThought(result.content);
         }
         
         setInput('');

@@ -4,6 +4,8 @@ import { FirestoreService } from './firestore';
 import { DataMigration } from '../utils/dataMigration';
 import type { Thought, Todo, RadiologyNote } from '../types';
 
+import { getIsGoogleSignedIn, createEvent } from './googleCalendar';
+
 // 통합 데이터 서비스 클래스
 export class DataService {
   private firestoreService: FirestoreService | null = null;
@@ -105,10 +107,20 @@ export class DataService {
 
     if (this.firestoreService && this.isOnline) {
       try {
-        await this.firestoreService.addTodo(content);
+        const newTodo = await this.firestoreService.addTodo(content);
+        // 캘린더 연동 로직
+        if (getIsGoogleSignedIn()) {
+          try {
+            const calendarEvent: any = await createEvent(content);
+            await this.firestoreService.updateTodo(newTodo.id, { googleEventId: calendarEvent.id });
+          } catch (error) {
+            console.error('Failed to create Google Calendar event:', error);
+          }
+        }
       } catch (error) {
         console.warn('Failed to save todo to Firebase:', error);
       }
+    }
     }
 
     return localTodo;

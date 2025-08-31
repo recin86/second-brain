@@ -1,11 +1,20 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { LanguageToggle } from '../LanguageToggle';
+import { initClient, handleAuthClick, handleSignoutClick } from '../../services/googleCalendar';
 
 export const Header: React.FC = () => {
   const { language, setLanguage, t } = useLanguage();
   const { user, logout } = useAuth();
+  const [isGoogleSignedIn, setIsGoogleSignedIn] = useState(false);
+
+  useEffect(() => {
+    const updateAuthStatus = (isSignedIn: boolean) => {
+      setIsGoogleSignedIn(isSignedIn);
+    };
+    initClient(updateAuthStatus);
+  }, []);
 
   return (
     <header className="bg-white/90 backdrop-blur-lg" style={{borderBottom: '1px solid rgba(78, 166, 109, 0.2)'}}>
@@ -28,6 +37,16 @@ export const Header: React.FC = () => {
           <div className="flex items-center space-x-4">
             <LanguageToggle language={language} onLanguageChange={setLanguage} />
             
+            {isGoogleSignedIn ? (
+              <button onClick={handleSignoutClick} className="btn-secondary">
+                캘린더 연동 해제
+              </button>
+            ) : (
+              <button onClick={handleAuthClick} className="btn-primary">
+                캘린더 연동
+              </button>
+            )}
+
             {user && (
               <div className="flex items-center space-x-3">
                 <div className="text-right">
