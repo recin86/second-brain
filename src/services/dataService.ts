@@ -108,7 +108,7 @@ export class DataService {
     if (this.firestoreService && this.isOnline) {
       try {
         const newTodo = await this.firestoreService.addTodo(content);
-        // 캘린더 연동 로직
+        
         if (getIsGoogleSignedIn()) {
           try {
             const calendarEvent: any = await createEvent(content);
@@ -117,10 +117,11 @@ export class DataService {
             console.error('Failed to create Google Calendar event:', error);
           }
         }
+        return newTodo; // Return the cloud-saved todo
       } catch (error) {
-        console.warn('Failed to save todo to Firebase:', error);
+        console.warn('Failed to save todo to Firebase, returning local version:', error);
+        return localTodo; // Return local todo as a fallback
       }
-    }
     }
 
     return localTodo;
