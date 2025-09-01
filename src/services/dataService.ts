@@ -10,6 +10,7 @@ class DataService {
   private firestoreService: FirestoreService | null = null;
   private migration: DataMigration | null = null;
   private isOnline: boolean = navigator.onLine;
+  private deletedItems: Map<string, { type: string; data: any; timestamp: number }> = new Map();
 
   constructor() {
     window.addEventListener('online', () => { this.isOnline = true; });
@@ -205,6 +206,225 @@ class DataService {
     if (this.firestoreService) return this.firestoreService.subscribeToInvestments(callback);
     callback(storage.getInvestments());
     return () => {};
+  }
+
+  // Soft delete for undo functionality
+  async softDeleteThought(id: string): Promise<() => Promise<void>> {
+    const thought = storage.getThoughts().find(t => t.id === id);
+    if (!thought) throw new Error('Thought not found');
+
+    // Store for potential restoration
+    this.deletedItems.set(id, { 
+      type: 'thought', 
+      data: thought, 
+      timestamp: Date.now() 
+    });
+
+    // Delete from storage
+    await this.deleteThought(id);
+
+    // Return undo function
+    return async () => {
+      const deletedItem = this.deletedItems.get(id);
+      if (deletedItem && deletedItem.type === 'thought') {
+        storage.addThought(deletedItem.data);
+        if (this.firestoreService && this.isOnline) {
+          try {
+            await this.firestoreService.addThought(deletedItem.data);
+          } catch (error) {
+            console.warn('Failed to restore thought to Firebase', error);
+          }
+        }
+        this.deletedItems.delete(id);
+      }
+    };
+  }
+
+  async softDeleteTodo(id: string): Promise<() => Promise<void>> {
+    const todo = storage.getTodos().find(t => t.id === id);
+    if (!todo) throw new Error('Todo not found');
+
+    this.deletedItems.set(id, { 
+      type: 'todo', 
+      data: todo, 
+      timestamp: Date.now() 
+    });
+
+    await this.deleteTodo(id);
+
+    return async () => {
+      const deletedItem = this.deletedItems.get(id);
+      if (deletedItem && deletedItem.type === 'todo') {
+        storage.addTodo(deletedItem.data);
+        if (this.firestoreService && this.isOnline) {
+          try {
+            await this.firestoreService.addTodo(deletedItem.data);
+          } catch (error) {
+            console.warn('Failed to restore todo to Firebase', error);
+          }
+        }
+        this.deletedItems.delete(id);
+      }
+    };
+  }
+
+  async softDeleteRadiologyNote(id: string): Promise<() => Promise<void>> {
+    const note = storage.getRadiologyNotes().find(n => n.id === id);
+    if (!note) throw new Error('Radiology note not found');
+
+    this.deletedItems.set(id, { 
+      type: 'radiology', 
+      data: note, 
+      timestamp: Date.now() 
+    });
+
+    await this.deleteRadiologyNote(id);
+
+    return async () => {
+      const deletedItem = this.deletedItems.get(id);
+      if (deletedItem && deletedItem.type === 'radiology') {
+        storage.addRadiologyNote(deletedItem.data);
+        if (this.firestoreService && this.isOnline) {
+          try {
+            await this.firestoreService.addRadiologyNote(deletedItem.data);
+          } catch (error) {
+            console.warn('Failed to restore radiology note to Firebase', error);
+          }
+        }
+        this.deletedItems.delete(id);
+      }
+    };
+  }
+
+  async softDeleteInvestment(id: string): Promise<() => Promise<void>> {
+    const investment = storage.getInvestments().find(i => i.id === id);
+    if (!investment) throw new Error('Investment not found');
+
+    this.deletedItems.set(id, { 
+      type: 'investment', 
+      data: investment, 
+      timestamp: Date.now() 
+    });
+
+    await this.deleteInvestment(id);
+
+    return async () => {
+      const deletedItem = this.deletedItems.get(id);
+      if (deletedItem && deletedItem.type === 'investment') {
+        storage.addInvestment(deletedItem.data);
+        if (this.firestoreService && this.isOnline) {
+          try {
+            await this.firestoreService.addInvestment(deletedItem.data);
+          } catch (error) {
+            console.warn('Failed to restore investment to Firebase', error);
+          }
+        }
+        this.deletedItems.delete(id);
+      }
+    };
+  }
+
+  // Category conversion functions
+  async convertToThought(id: string, fromType: 'todo' | 'investment' | 'radiology'): Promise<void> {
+    let sourceData: any;
+    
+    switch (fromType) {
+      case 'todo':
+        sourceData = storage.getTodos().find(t => t.id === id);
+        if (sourceData) await this.deleteTodo(id);
+        break;
+      case 'investment':
+        sourceData = storage.getInvestments().find(i => i.id === id);
+        if (sourceData) await this.deleteInvestment(id);
+        break;
+      case 'radiology':
+        sourceData = storage.getRadiologyNotes().find(n => n.id === id);
+        if (sourceData) await this.deleteRadiologyNote(id);
+        break;
+    }
+
+    if (sourceData) {
+      await this.addThought(sourceData.content);
+    }
+  }
+
+  async convertToTodo(id: string, fromType: 'thought' | 'investment' | 'radiology'): Promise<void> {
+    let sourceData: any;
+    
+    switch (fromType) {
+      case 'thought':
+        sourceData = storage.getThoughts().find(t => t.id === id);
+        if (sourceData) await this.deleteThought(id);
+        break;
+      case 'investment':
+        sourceData = storage.getInvestments().find(i => i.id === id);
+        if (sourceData) await this.deleteInvestment(id);
+        break;
+      case 'radiology':
+        sourceData = storage.getRadiologyNotes().find(n => n.id === id);
+        if (sourceData) await this.deleteRadiologyNote(id);
+        break;
+    }
+
+    if (sourceData) {
+      await this.addTodo(sourceData.content);
+    }
+  }
+
+  async convertToInvestment(id: string, fromType: 'thought' | 'todo' | 'radiology'): Promise<void> {
+    let sourceData: any;
+    
+    switch (fromType) {
+      case 'thought':
+        sourceData = storage.getThoughts().find(t => t.id === id);
+        if (sourceData) await this.deleteThought(id);
+        break;
+      case 'todo':
+        sourceData = storage.getTodos().find(t => t.id === id);
+        if (sourceData) await this.deleteTodo(id);
+        break;
+      case 'radiology':
+        sourceData = storage.getRadiologyNotes().find(n => n.id === id);
+        if (sourceData) await this.deleteRadiologyNote(id);
+        break;
+    }
+
+    if (sourceData) {
+      await this.addInvestment(sourceData.content);
+    }
+  }
+
+  async convertToRadiology(id: string, fromType: 'thought' | 'todo' | 'investment'): Promise<void> {
+    let sourceData: any;
+    
+    switch (fromType) {
+      case 'thought':
+        sourceData = storage.getThoughts().find(t => t.id === id);
+        if (sourceData) await this.deleteThought(id);
+        break;
+      case 'todo':
+        sourceData = storage.getTodos().find(t => t.id === id);
+        if (sourceData) await this.deleteTodo(id);
+        break;
+      case 'investment':
+        sourceData = storage.getInvestments().find(i => i.id === id);
+        if (sourceData) await this.deleteInvestment(id);
+        break;
+    }
+
+    if (sourceData) {
+      await this.addRadiologyNote(sourceData.content, ['#rad']);
+    }
+  }
+
+  // Clean up old deleted items (called periodically)
+  cleanupOldDeletedItems(maxAge: number = 5 * 60 * 1000): void {
+    const now = Date.now();
+    for (const [id, item] of this.deletedItems.entries()) {
+      if (now - item.timestamp > maxAge) {
+        this.deletedItems.delete(id);
+      }
+    }
   }
 }
 

@@ -2,14 +2,21 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { dataService } from '../services/dataService';
 import type { RadiologyNote } from '../types';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useToast } from '../contexts/ToastContext';
 import { isTextLong, getPreviewText } from '../utils/textUtils';
 import { formatDate } from '../utils/dateUtils';
 import { useCardExpansion } from '../hooks/useCardExpansion';
+import { useSwipeGesture } from '../hooks/useSwipeGesture';
+import { useLongPress } from '../hooks/useLongPress';
+import { CategoryChangeModal } from '../components/ui/CategoryChangeModal';
 
 export const RadiologyPage: React.FC = () => {
   const { t } = useLanguage();
+  const { showUndo } = useToast();
   const [notes, setNotes] = useState<RadiologyNote[]>([]);
   const [selectedTag, setSelectedTag] = useState<string>('all');
+  const [categoryModalOpen, setCategoryModalOpen] = useState(false);
+  const [selectedItemId, setSelectedItemId] = useState<string>('');
   const { toggleCardExpansion, isExpanded } = useCardExpansion();
 
   useEffect(() => {
@@ -38,9 +45,39 @@ export const RadiologyPage: React.FC = () => {
   };
 
 
-  const handleDelete = (id: string) => {
-    if (window.confirm(t('radiology.delete_confirm'))) {
-      dataService.deleteRadiologyNote(id);
+  const handleDelete = async (id: string, skipConfirm = false) => {
+    if (!skipConfirm && !window.confirm(t('radiology.delete_confirm'))) {
+      return;
+    }
+    
+    try {
+      const undoFunction = await dataService.softDeleteRadiologyNote(id);
+      showUndo('영상의학 노트가 삭제되었습니다', undoFunction);
+    } catch (error) {
+      console.error('Failed to delete radiology note:', error);
+    }
+  };
+
+  const handleCategoryChange = async (newCategory: string) => {
+    if (!selectedItemId) return;
+    
+    try {
+      switch (newCategory) {
+        case 'thought':
+          await dataService.convertToThought(selectedItemId, 'radiology');
+          break;
+        case 'todo':
+          await dataService.convertToTodo(selectedItemId, 'radiology');
+          break;
+        case 'investment':
+          await dataService.convertToInvestment(selectedItemId, 'radiology');
+          break;
+      }
+      
+      setCategoryModalOpen(false);
+      setSelectedItemId('');
+    } catch (error) {
+      console.error('Failed to convert category:', error);
     }
   };
 
@@ -114,36 +151,62 @@ export const RadiologyPage: React.FC = () => {
             const displayContent = isLong && !cardExpanded 
               ? getPreviewText(note.content) 
               : note.content;
+
+            const RadiologyCard = () => {
+              const swipeGesture = useSwipeGesture({
+                onSwipeLeft: () => handleDelete(note.id, true),
+                onSwipeRight: () => {
+                  setSelectedItemId(note.id);
+                  setCategoryModalOpen(true);
+                },
+              }, { threshold: 100, preventScrollOnSwipe: true });
+
+              const longPress = useLongPress(() => {
+                setSelectedItemId(note.id);
+                setCategoryModalOpen(true);
+              }, { threshold: 500 });
             
-            return (
-              <div
-                key={note.id}
-                className="card card-hover relative group"
-              >
-                <div className="flex flex-col">
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex-1 pr-8">
-                      <p className="text-base leading-relaxed font-medium text-primary whitespace-pre-line">
-                        {displayContent}
-                      </p>
-                      
-                      {isLong && (
-                        <button
-                          onClick={() => toggleCardExpansion(note.id)}
-                          className="mt-2 text-sm text-blue-600 hover:text-blue-800 font-medium transition-colors"
-                        >
-                          {cardExpanded ? '접기' : '...더보기'}
-                        </button>
-                      )}
+              return (
+                <div
+                  key={note.id}
+                  className={`card card-hover relative group transform transition-transform duration-200 ${
+                    swipeGesture.isDragging ? 
+                      swipeGesture.swipeDirection === 'left' ? 'bg-red-50 border-red-200' :
+                      swipeGesture.swipeDirection === 'right' ? 'bg-blue-50 border-blue-200' : ''
+                      : ''
+                  }`}
+                  style={{
+                    transform: swipeGesture.isDragging ? 
+                      `translateX(${Math.min(Math.max(swipeGesture.getSwipeDistance(), -150), 150)}px)` : 
+                      'translateX(0)'
+                  }}
+                  {...swipeGesture.swipeHandlers}
+                  {...longPress.handlers}
+                >
+                  <div className="flex flex-col">
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex-1 pr-8">
+                        <p className="text-base leading-relaxed font-medium text-primary whitespace-pre-line">
+                          {displayContent}
+                        </p>
+                        
+                        {isLong && (
+                          <button
+                            onClick={() => toggleCardExpansion(note.id)}
+                            className="mt-2 text-sm text-blue-600 hover:text-blue-800 font-medium transition-colors"
+                          >
+                            {cardExpanded ? '접기' : '...더보기'}
+                          </button>
+                        )}
+                      </div>
+                      <button
+                        onClick={() => handleDelete(note.id)}
+                        className="absolute top-4 right-4 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-200 text-muted hover:text-red-600 p-1"
+                        aria-label="Delete note"
+                      >
+                        🗑️
+                      </button>
                     </div>
-                    <button
-                      onClick={() => handleDelete(note.id)}
-                      className="absolute top-4 right-4 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-200 text-muted hover:text-red-600 p-1"
-                      aria-label="Delete note"
-                    >
-                      🗑️
-                    </button>
-                  </div>
                   
                   <div className="flex flex-wrap gap-2 mb-3">
                     {note.tags.map((tag, index) => (
@@ -160,15 +223,44 @@ export const RadiologyPage: React.FC = () => {
                     ))}
                   </div>
                   
-                  <div className="badge ml-auto">
-                    {formatDate(note.createdAt)}
+                    <div className="badge ml-auto">
+                      {formatDate(note.createdAt)}
+                    </div>
                   </div>
+
+                  {/* Swipe indicators */}
+                  {swipeGesture.isDragging && (
+                    <>
+                      <div className={`absolute left-4 top-1/2 transform -translate-y-1/2 text-2xl transition-opacity ${
+                        swipeGesture.swipeDirection === 'right' ? 'opacity-100' : 'opacity-30'
+                      }`}>
+                        🔄
+                      </div>
+                      <div className={`absolute right-4 top-1/2 transform -translate-y-1/2 text-2xl transition-opacity ${
+                        swipeGesture.swipeDirection === 'left' ? 'opacity-100' : 'opacity-30'
+                      }`}>
+                        🗑️
+                      </div>
+                    </>
+                  )}
                 </div>
-              </div>
-            );
+              );
+            };
+            
+            return <RadiologyCard key={note.id} />;
           })}
         </div>
       )}
+
+      <CategoryChangeModal
+        isOpen={categoryModalOpen}
+        currentCategory="radiology"
+        onCategorySelect={handleCategoryChange}
+        onClose={() => {
+          setCategoryModalOpen(false);
+          setSelectedItemId('');
+        }}
+      />
     </div>
   );
 };

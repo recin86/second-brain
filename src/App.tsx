@@ -4,6 +4,8 @@ import { Navigation } from './components/layout/Navigation'
 import { LoginForm } from './components/auth/LoginForm'
 import { LanguageProvider } from './contexts/LanguageContext'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
+import { ToastProvider } from './contexts/ToastContext'
+import { ToastContainer } from './components/ui/ToastContainer'
 import { dataService } from './services/dataService'
 import { LazyPageWrapper } from './components/LazyPageWrapper'
 
@@ -89,6 +91,7 @@ const AppContent = () => {
       <main className="py-4 sm:py-6">
         {renderCurrentPage()}
       </main>
+      <ToastContainer />
     </div>
   );
 };
@@ -97,7 +100,9 @@ function App() {
   return (
     <AuthProvider>
       <LanguageProvider>
-        <AppContent />
+        <ToastProvider>
+          <AppContent />
+        </ToastProvider>
       </LanguageProvider>
     </AuthProvider>
   )
