@@ -25,7 +25,7 @@ const translations = {
     // Quick Input
     'quick.title': '무엇을 기록할까요?',
     'quick.subtitle': '생각이나 할 일을 자유롭게 적어보세요',
-    'quick.placeholder': '여기에 입력하세요... (할 일은 끝에 ;, 투자는 끝에 \' 추가)',
+    'quick.placeholder': '여기에 입력하세요... (할 일은 끝에 ;, 투자는 끝에 ;; 추가)',
     'quick.hint': '💡 Shift+Enter로 줄바꿈, Enter로 저장',
     'quick.saving': '저장 중...',
     'quick.save': 'Enter로 저장',
@@ -75,7 +75,7 @@ const translations = {
     'investments.subtitle': '투자 관련 기록들을 확인하고 관리하세요',
     'investments.search': '투자 기록 검색...',
     'investments.empty_all': '아직 투자 기록이 없어요',
-    'investments.empty_subtitle': '빠른 입력에서 끝에 \'를 붙여 투자 기록을 등록해보세요!',
+    'investments.empty_subtitle': '빠른 입력에서 끝에 ;;을 붙여 투자 기록을 등록해보세요!',
     'investments.count': '개',
     'investments.delete_confirm': '정말 이 투자 기록을 삭제하시겠습니까?',
     
@@ -129,7 +129,7 @@ const translations = {
     // Quick Input
     'quick.title': 'What would you like to record?',
     'quick.subtitle': 'Feel free to jot down thoughts or tasks',
-    'quick.placeholder': 'Type here... (add ; for tasks, \' for investments)',
+    'quick.placeholder': 'Type here... (add ; for tasks, ;; for investments)',
     'quick.hint': '💡 Shift+Enter for new line, Enter to save',
     'quick.saving': 'Saving...',
     'quick.save': 'Press Enter to save',
@@ -179,7 +179,7 @@ const translations = {
     'investments.subtitle': 'View and manage your investment records',
     'investments.search': 'Search investment records...',
     'investments.empty_all': 'No investment records yet',
-    'investments.empty_subtitle': 'Add \' at the end in Quick Input to create investment records!',
+    'investments.empty_subtitle': 'Add ;; at the end in Quick Input to create investment records!',
     'investments.count': 'items',
     'investments.delete_confirm': 'Are you sure you want to delete this investment record?',
     

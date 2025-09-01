@@ -90,7 +90,7 @@ export const QuickInput: React.FC<QuickInputProps> = React.memo(() => {
 
   return (
     <div className="px-0 sm:px-0 mb-6 sm:mb-8">
-      <div className="bg-primary rounded-xl sm:rounded-3xl p-3 sm:p-8 shadow-lg border border-transparent mx-2 sm:mx-0">
+      <div className="bg-primary rounded-xl sm:rounded-3xl p-3 sm:p-8 shadow-lg border border-transparent mx-0 sm:mx-0">
         <div className="space-y-4 sm:space-y-6">
           <div>
             <h2 className="text-2xl sm:text-3xl font-bold mb-4 sm:mb-6 tracking-tight text-white">
@@ -105,7 +105,7 @@ export const QuickInput: React.FC<QuickInputProps> = React.memo(() => {
               onChange={handleChange}
               onKeyDown={handleSubmit}
               placeholder={t('quick.placeholder')}
-              className="w-full min-h-[100px] sm:min-h-[120px] p-4 text-base sm:text-xl border border-transparent bg-gray-100 text-gray-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary resize-none placeholder-gray-500 font-normal leading-relaxed"
+              className="w-full min-h-[100px] sm:min-h-[120px] p-4 text-base sm:text-xl border border-transparent bg-gray-100 text-gray-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary resize-none placeholder-gray-500 placeholder:text-sm font-normal leading-relaxed"
               disabled={isSubmitting}
               rows={3}
             />

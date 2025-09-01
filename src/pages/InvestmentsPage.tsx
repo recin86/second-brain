@@ -112,7 +112,7 @@ export const InvestmentsPage: React.FC = () => {
           </p>
         </div>
       ) : (
-        <div className="grid gap-4 sm:gap-6">
+        <div className="space-y-6">
           {filteredInvestments.map((investment) => {
             const isLong = isTextLong(investment.content);
             const cardExpanded = isExpanded(investment.id);
@@ -123,19 +123,12 @@ export const InvestmentsPage: React.FC = () => {
             return (
               <div
                 key={investment.id}
-                className="bg-white/70 backdrop-blur-sm rounded-xl sm:rounded-2xl p-4 sm:p-8 border border-primary/10 hover:border-primary/20 transition-all duration-300 hover:shadow-lg group"
+                className="card card-hover relative group"
               >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1 pr-2 sm:pr-4">
-                    <div className="flex items-center mb-3 sm:mb-4">
-                      <span className="text-xl sm:text-2xl mr-2 sm:mr-3">💰</span>
-                      <span className="text-xs sm:text-sm font-medium px-2 py-1 sm:px-3 sm:py-1 bg-green-100 text-green-700 rounded-full">
-                        {t('type.investment')}
-                      </span>
-                    </div>
-                    
-                    <div className="mb-3 sm:mb-4">
-                      <p className="text-sm sm:text-lg leading-relaxed text-gray-800 whitespace-pre-line">
+                <div className="flex flex-col">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex-1 pr-8">
+                      <p className="text-base leading-relaxed font-medium text-primary whitespace-pre-line">
                         {displayContent}
                       </p>
                       
@@ -148,19 +141,24 @@ export const InvestmentsPage: React.FC = () => {
                         </button>
                       )}
                     </div>
-                    
-                    <div className="flex items-center text-xs sm:text-sm text-muted">
-                      <span>{formatDate(investment.createdAt)}</span>
-                    </div>
+                    <button
+                      onClick={() => handleDeleteInvestment(investment.id)}
+                      className="absolute top-4 right-4 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-200 text-muted hover:text-red-600 p-1"
+                      aria-label="Delete investment"
+                    >
+                      🗑️
+                    </button>
                   </div>
                   
-                  <button
-                    onClick={() => handleDeleteInvestment(investment.id)}
-                    className="opacity-60 sm:opacity-0 group-hover:opacity-100 text-red-500 hover:text-red-700 transition-all duration-200 p-1 sm:p-2 hover:bg-red-50 rounded-lg flex-shrink-0"
-                    title="삭제"
-                  >
-                    <span className="text-lg sm:text-xl">🗑️</span>
-                  </button>
+                  <div className="flex items-center mb-3">
+                    <span className="px-2 py-1 rounded-lg text-xs font-semibold bg-green-100 text-green-800">
+                      💰 {t('type.investment')}
+                    </span>
+                  </div>
+                  
+                  <div className="badge ml-auto">
+                    {formatDate(investment.createdAt)}
+                  </div>
                 </div>
               </div>
             );

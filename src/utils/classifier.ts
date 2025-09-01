@@ -13,9 +13,11 @@ import { classifyRadiologyInput } from './tagParser';
 export function classifyInput(input: string): ClassificationResult {
   const trimmed = input.trim();
   
-  // Check for Investment note first (ends with ')
-  if (trimmed.endsWith("'")) {
-    const content = trimmed.slice(0, -1).trim();
+  // Check for Investment note first (ends with ' or ;;)
+  if (trimmed.endsWith("'") || trimmed.endsWith(";;")) {
+    const content = trimmed.endsWith(";;") 
+      ? trimmed.slice(0, -2).trim() 
+      : trimmed.slice(0, -1).trim();
     
     return {
       type: 'investment',

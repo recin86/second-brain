@@ -142,7 +142,7 @@ export const ThoughtsPage: React.FC = () => {
                                     await dataService.deleteThought(thought.id);
                                   }
                                 }}
-                                className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-muted hover:text-red-600 p-1"
+                                className="absolute top-4 right-4 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-200 text-muted hover:text-red-600 p-1"
                                 aria-label="Delete thought"
                               >
                                 🗑️

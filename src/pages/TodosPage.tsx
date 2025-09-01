@@ -153,7 +153,7 @@ export const TodosPage: React.FC = () => {
               >
                 <button
                   onClick={() => handleDeleteTodo(todo.id)}
-                  className="text-muted hover:text-red-600 absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10"
+                  className="text-muted hover:text-red-600 absolute top-4 right-4 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-200 z-10"
                   aria-label="Delete todo"
                 >
                   🗑️
