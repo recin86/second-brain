@@ -8,7 +8,7 @@ export interface ClassificationResult {
   statusMessage: string;
 }
 
-import { classifyRadiologyInput, extractTags, removeTagsFromContent } from './tagParser';
+import { classifyRadiologyInput } from './tagParser';
 
 export function classifyInput(input: string): ClassificationResult {
   const trimmed = input.trim();

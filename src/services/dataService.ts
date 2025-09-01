@@ -3,12 +3,12 @@ import { storage } from '../utils/storage';
 import { FirestoreService } from './firestore';
 import { DataMigration } from '../utils/dataMigration';
 import type { Thought, Todo, RadiologyNote, Investment } from '../types';
+import type { GoogleCalendarEvent } from '../types/google';
 import { getIsGoogleSignedIn, createEvent, updateEvent, deleteEvent } from './googleCalendar';
 
 class DataService {
   private firestoreService: FirestoreService | null = null;
   private migration: DataMigration | null = null;
-  private user: User | null = null;
   private isOnline: boolean = navigator.onLine;
 
   constructor() {
@@ -17,7 +17,6 @@ class DataService {
   }
 
   async initializeWithUser(user: User): Promise<void> {
-    this.user = user;
     this.firestoreService = new FirestoreService(user);
     this.migration = new DataMigration(user);
 
@@ -69,7 +68,7 @@ class DataService {
       try {
         await this.firestoreService.addTodo(newTodo);
         if (getIsGoogleSignedIn() && dueDate) {
-          const calendarEvent: any = await createEvent(content, dueDate);
+          const calendarEvent = await createEvent(content, dueDate) as GoogleCalendarEvent;
           await this.updateTodo(newTodo.id, { googleEventId: calendarEvent.id });
         }
       } catch (error) {
@@ -139,7 +138,7 @@ class DataService {
           const newDueDate = updates.dueDate;
           try {
             if (newDueDate && !googleEventId) {
-              const newEvent: any = await createEvent(content, newDueDate);
+              const newEvent = await createEvent(content, newDueDate) as GoogleCalendarEvent;
               updates.googleEventId = newEvent.id;
             } else if (newDueDate && googleEventId) {
               await updateEvent(googleEventId, content, newDueDate);

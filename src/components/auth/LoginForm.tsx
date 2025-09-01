@@ -1,9 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { useLanguage } from '../../contexts/LanguageContext';
 
 export const LoginForm: React.FC = () => {
-  const { t } = useLanguage();
   const { signIn, signUp, signInWithGoogle, signInAsGuest } = useAuth();
   const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState('');
@@ -24,8 +22,9 @@ export const LoginForm: React.FC = () => {
       } else {
         await signIn(email, password);
       }
-    } catch (error: any) {
-      setError(error.message);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'An error occurred';
+      setError(message);
     } finally {
       setLoading(false);
     }
@@ -37,8 +36,9 @@ export const LoginForm: React.FC = () => {
     
     try {
       await signInWithGoogle();
-    } catch (error: any) {
-      setError(error.message);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'An error occurred';
+      setError(message);
     } finally {
       setLoading(false);
     }
@@ -50,8 +50,9 @@ export const LoginForm: React.FC = () => {
     
     try {
       await signInAsGuest();
-    } catch (error: any) {
-      setError(error.message);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'An error occurred';
+      setError(message);
     } finally {
       setLoading(false);
     }

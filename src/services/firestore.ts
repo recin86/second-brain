@@ -8,7 +8,6 @@ import {
   getDoc,
   query,
   orderBy,
-  where,
   onSnapshot,
   serverTimestamp,
   Timestamp
@@ -17,9 +16,16 @@ import type { User } from 'firebase/auth';
 import { db } from '../config/firebase';
 import type { Thought, Todo, RadiologyNote, Investment } from '../types';
 
-const convertFirestoreTimestamp = (timestamp: any): Date => {
+interface TimestampLike {
+  seconds: number;
+  nanoseconds: number;
+}
+
+const convertFirestoreTimestamp = (timestamp: Timestamp | TimestampLike | string | Date): Date => {
   if (timestamp instanceof Timestamp) return timestamp.toDate();
-  if (timestamp && timestamp.seconds) return new Timestamp(timestamp.seconds, timestamp.nanoseconds).toDate();
+  if (timestamp && typeof timestamp === 'object' && 'seconds' in timestamp) {
+    return new Timestamp(timestamp.seconds, timestamp.nanoseconds).toDate();
+  }
   return new Date(timestamp);
 };
 
@@ -72,7 +78,7 @@ export class FirestoreService {
     const { id, ...todoData } = todo;
     
     // undefined 값들을 필터링
-    const cleanTodoData: any = { ...todoData, createdAt: serverTimestamp() };
+    const cleanTodoData: Record<string, any> = { ...todoData, createdAt: serverTimestamp() };
     if (cleanTodoData.dueDate === undefined) {
       delete cleanTodoData.dueDate;
     }
@@ -85,12 +91,12 @@ export class FirestoreService {
 
   async updateTodo(todoId: string, updates: Partial<Todo>): Promise<void> {
     const docRef = doc(db, getUserCollectionPath(this.userId, 'todos'), todoId);
-    const updateData: any = { ...updates };
+    const updateData: Record<string, any> = { ...updates };
     
     // undefined 값들을 필터링하고 dueDate를 Timestamp로 변환
     if (updateData.dueDate === undefined) {
       delete updateData.dueDate;
-    } else if (updateData.dueDate) {
+    } else if (updateData.dueDate && updateData.dueDate instanceof Date) {
       updateData.dueDate = Timestamp.fromDate(updateData.dueDate);
     }
     

@@ -1,12 +1,11 @@
 import { gapi } from 'gapi-script';
+import type { GoogleCalendarEvent, GoogleTokenResponse } from '../types/google';
 
 const API_KEY = import.meta.env.VITE_GOOGLE_API_KEY;
 const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 const SCOPES = 'https://www.googleapis.com/auth/calendar.events';
 
-let tokenClient: google.accounts.oauth2.TokenClient;
-let gapiInited = false;
-let gisInited = false;
+let tokenClient: any; // Google Identity Services 타입이 없으므로 any 유지
 let isGoogleSignedIn = false;
 
 /**
@@ -20,16 +19,15 @@ export const getIsGoogleSignedIn = () => isGoogleSignedIn;
 const initializeGis = () => {
   return new Promise<void>((resolve, reject) => {
     try {
-      if (typeof google === 'undefined') {
+      if (typeof (window as any).google === 'undefined') {
         reject(new Error("Google Identity Services script not loaded."));
         return;
       }
-      tokenClient = google.accounts.oauth2.initTokenClient({
+      tokenClient = (window as any).google.accounts.oauth2.initTokenClient({
         client_id: CLIENT_ID,
         scope: SCOPES,
         callback: () => {}, // 콜백은 요청 시 동적으로 처리
       });
-      gisInited = true;
       resolve();
     } catch (error) {
       reject(error);
@@ -48,7 +46,6 @@ const initializeGapi = () => {
           apiKey: API_KEY,
           discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest'],
         });
-        gapiInited = true;
         resolve();
       } catch (error) {
         reject(error);
@@ -65,7 +62,7 @@ export const initClient = async (onAuthChange: (isSignedIn: boolean) => void) =>
   await initializeGis();
   
   // GIS 스크립트가 로드되면 gapi.client의 토큰을 설정합니다.
-  tokenClient.callback = (resp) => {
+  tokenClient.callback = (resp: GoogleTokenResponse) => {
     if (resp.error !== undefined) {
       // Handle errors during silent token retrieval or user interaction
       console.error("Google token retrieval error:", resp.error);
@@ -100,13 +97,13 @@ export const handleAuthClick = () => {
  * Google 인증 세션을 종료합니다.
  */
 export const handleSignoutClick = () => {
-  if (typeof google === 'undefined') {
+  if (typeof (window as any).google === 'undefined') {
     console.error('Google Identity Services script not loaded yet.');
     return;
   }
   const token = gapi.client.getToken();
   if (token !== null) {
-    google.accounts.oauth2.revoke(token.access_token, () => {
+    (window as any).google.accounts.oauth2.revoke(token.access_token, () => {
       gapi.client.setToken(null);
       isGoogleSignedIn = false;
     });
@@ -134,7 +131,7 @@ export const createEvent = async (summary: string, dueDate?: Date) => {
   });
 
   return new Promise((resolve, reject) => {
-    request.execute(event => event.error ? reject(event.error) : resolve(event));
+    request.execute((event: GoogleCalendarEvent) => event.error ? reject(event.error) : resolve(event));
   });
 };
 
@@ -150,7 +147,7 @@ export const updateEvent = async (eventId: string, summary: string, dueDate?: Da
   });
 
   return new Promise((resolve, reject) => {
-    request.execute(event => event.error ? reject(event.error) : resolve(event));
+    request.execute((event: GoogleCalendarEvent) => event.error ? reject(event.error) : resolve(event));
   });
 };
 
@@ -164,6 +161,6 @@ export const deleteEvent = async (eventId: string) => {
   });
 
   return new Promise((resolve, reject) => {
-    request.execute(result => result.error ? reject(result.error) : resolve(result));
+    request.execute((result: { error?: string }) => result.error ? reject(result.error) : resolve(result));
   });
 };

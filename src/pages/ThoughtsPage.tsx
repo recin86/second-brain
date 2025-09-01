@@ -3,13 +3,15 @@ import { dataService } from '../services/dataService';
 import type { Thought } from '../types';
 import { useLanguage } from '../contexts/LanguageContext';
 import { isTextLong, getPreviewText } from '../utils/textUtils';
+import { formatDate, getMonthKey } from '../utils/dateUtils';
+import { useCardExpansion } from '../hooks/useCardExpansion';
 
 export const ThoughtsPage: React.FC = () => {
   const { t } = useLanguage();
   const [thoughts, setThoughts] = useState<Thought[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedMonths, setExpandedMonths] = useState<Record<string, boolean>>({});
-  const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
+  const { toggleCardExpansion, isExpanded } = useCardExpansion();
 
   useEffect(() => {
     const unsubscribe = dataService.subscribeToThoughts((updatedThoughts) => {
@@ -17,10 +19,7 @@ export const ThoughtsPage: React.FC = () => {
       // 모든 월을 기본적으로 열린 상태로 설정
       const initialExpandedState: Record<string, boolean> = {};
       updatedThoughts.forEach(thought => {
-        const monthKey = new Intl.DateTimeFormat('ko-KR', {
-          year: 'numeric',
-          month: 'long'
-        }).format(thought.createdAt);
+        const monthKey = getMonthKey(thought.createdAt);
         initialExpandedState[monthKey] = true;
       });
       setExpandedMonths(prev => ({ ...prev, ...initialExpandedState }));
@@ -35,21 +34,9 @@ export const ThoughtsPage: React.FC = () => {
     thought.content.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const formatDate = (date: Date) => {
-    return new Intl.DateTimeFormat('ko-KR', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    }).format(date);
-  };
 
   const groupedThoughts = filteredThoughts.reduce((acc, thought) => {
-    const monthKey = new Intl.DateTimeFormat('ko-KR', {
-      year: 'numeric',
-      month: 'long'
-    }).format(thought.createdAt);
+    const monthKey = getMonthKey(thought.createdAt);
     
     if (!acc[monthKey]) {
       acc[monthKey] = [];
@@ -58,17 +45,6 @@ export const ThoughtsPage: React.FC = () => {
     return acc;
   }, {} as Record<string, Thought[]>);
 
-  const toggleCardExpansion = (cardId: string) => {
-    setExpandedCards(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(cardId)) {
-        newSet.delete(cardId);
-      } else {
-        newSet.add(cardId);
-      }
-      return newSet;
-    });
-  };
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-8 py-6 sm:py-12">
@@ -134,8 +110,8 @@ export const ThoughtsPage: React.FC = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {monthThoughts.map((thought) => {
                       const isLong = isTextLong(thought.content);
-                      const isExpanded = expandedCards.has(thought.id);
-                      const displayContent = isLong && !isExpanded 
+                      const cardExpanded = isExpanded(thought.id);
+                      const displayContent = isLong && !cardExpanded 
                         ? getPreviewText(thought.content) 
                         : thought.content;
                       
@@ -156,7 +132,7 @@ export const ThoughtsPage: React.FC = () => {
                                     onClick={() => toggleCardExpansion(thought.id)}
                                     className="mt-2 text-sm text-blue-600 hover:text-blue-800 font-medium transition-colors"
                                   >
-                                    {isExpanded ? '접기' : '...더보기'}
+                                    {cardExpanded ? '접기' : '...더보기'}
                                   </button>
                                 )}
                               </div>

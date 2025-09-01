@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { classifyInput } from '../../utils/classifier';
 import type { ClassificationResult } from '../../utils/classifier';
 import { dataService } from '../../services/dataService';
@@ -6,7 +6,7 @@ import { useLanguage } from '../../contexts/LanguageContext';
 
 interface QuickInputProps {}
 
-export const QuickInput: React.FC<QuickInputProps> = () => {
+export const QuickInput: React.FC<QuickInputProps> = React.memo(() => {
   const { t } = useLanguage();
   const [input, setInput] = useState('');
   const [classification, setClassification] = useState<ClassificationResult | null>(null);
@@ -84,9 +84,9 @@ export const QuickInput: React.FC<QuickInputProps> = () => {
     });
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+  const handleChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setInput(e.target.value);
-  };
+  }, []);
 
   return (
     <div className="px-0 sm:px-0 mb-6 sm:mb-8">
@@ -146,4 +146,4 @@ export const QuickInput: React.FC<QuickInputProps> = () => {
       </div>
     </div>
   );
-};
+});

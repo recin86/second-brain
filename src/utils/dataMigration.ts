@@ -1,7 +1,7 @@
 import type { User } from 'firebase/auth';
 import { storage } from './storage';
 import { FirestoreService } from '../services/firestore';
-import type { Thought, Todo, RadiologyNote } from '../types';
+import { STORAGE_KEYS } from '../constants';
 
 export class DataMigration {
   private firestoreService: FirestoreService;
@@ -32,7 +32,7 @@ export class DataMigration {
       console.log(`📝 Found ${localThoughts.length} thoughts to migrate`);
       
       for (const thought of localThoughts) {
-        await this.firestoreService.addThought(thought.content);
+        await this.firestoreService.addThought(thought);
         migrationCounts.thoughts++;
       }
 
@@ -41,17 +41,7 @@ export class DataMigration {
       console.log(`✅ Found ${localTodos.length} todos to migrate`);
       
       for (const todo of localTodos) {
-        const newTodo = await this.firestoreService.addTodo(todo.content);
-        
-        // 완료 상태, 우선순위, 마감일 업데이트
-        if (todo.isCompleted !== false || todo.priority !== 'medium' || todo.dueDate) {
-          await this.firestoreService.updateTodo(newTodo.id, {
-            isCompleted: todo.isCompleted,
-            priority: todo.priority,
-            dueDate: todo.dueDate
-          });
-        }
-        
+        await this.firestoreService.addTodo(todo);
         migrationCounts.todos++;
       }
 
@@ -60,7 +50,7 @@ export class DataMigration {
       console.log(`🏥 Found ${localRadiologyNotes.length} radiology notes to migrate`);
       
       for (const note of localRadiologyNotes) {
-        await this.firestoreService.addRadiologyNote(note.content, note.tags);
+        await this.firestoreService.addRadiologyNote(note);
         migrationCounts.radiologyNotes++;
       }
 
@@ -103,12 +93,12 @@ export class DataMigration {
 
   // 마이그레이션 완료 상태 확인
   isMigrationCompleted(): boolean {
-    return localStorage.getItem(`migration-completed-${this.user.uid}`) === 'true';
+    return localStorage.getItem(`${STORAGE_KEYS.MIGRATION_PREFIX}${this.user.uid}`) === 'true';
   }
 
   // 마이그레이션 완료 표시
   private markMigrationCompleted(): void {
-    localStorage.setItem(`migration-completed-${this.user.uid}`, 'true');
+    localStorage.setItem(`${STORAGE_KEYS.MIGRATION_PREFIX}${this.user.uid}`, 'true');
   }
 
   // 마이그레이션이 필요한지 확인

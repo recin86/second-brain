@@ -43,16 +43,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const signIn = async (email: string, password: string) => {
     try {
       await signInWithEmailAndPassword(auth, email, password);
-    } catch (error: any) {
-      throw new Error(error.message);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'An unknown error occurred';
+      throw new Error(message);
     }
   };
 
   const signUp = async (email: string, password: string) => {
     try {
       await createUserWithEmailAndPassword(auth, email, password);
-    } catch (error: any) {
-      throw new Error(error.message);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'An unknown error occurred';
+      throw new Error(message);
     }
   };
 
@@ -60,24 +62,27 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       const provider = new GoogleAuthProvider();
       await signInWithPopup(auth, provider);
-    } catch (error: any) {
-      throw new Error(error.message);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'An unknown error occurred';
+      throw new Error(message);
     }
   };
 
   const signInAsGuest = async () => {
     try {
       await signInAnonymously(auth);
-    } catch (error: any) {
-      throw new Error(error.message);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'An unknown error occurred';
+      throw new Error(message);
     }
   };
 
   const logout = async () => {
     try {
       await signOut(auth);
-    } catch (error: any) {
-      throw new Error(error.message);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'An unknown error occurred';
+      throw new Error(message);
     }
   };
 

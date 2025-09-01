@@ -1,16 +1,19 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, lazy } from 'react'
 import { Header } from './components/layout/Header'
 import { Navigation } from './components/layout/Navigation'
-import { QuickPage } from './pages/QuickPage'
-import { ThoughtsPage } from './pages/ThoughtsPage'
-import { TodosPage } from './pages/TodosPage'
-import { RadiologyPage } from './pages/RadiologyPage'
-import { InvestmentsPage } from './pages/InvestmentsPage'
-import { SearchPage } from './pages/SearchPage'
 import { LoginForm } from './components/auth/LoginForm'
 import { LanguageProvider } from './contexts/LanguageContext'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { dataService } from './services/dataService'
+import { LazyPageWrapper } from './components/LazyPageWrapper'
+
+// 페이지들을 lazy load로 변경
+const QuickPage = lazy(() => import('./pages/QuickPage').then(m => ({ default: m.QuickPage })))
+const ThoughtsPage = lazy(() => import('./pages/ThoughtsPage').then(m => ({ default: m.ThoughtsPage })))
+const TodosPage = lazy(() => import('./pages/TodosPage').then(m => ({ default: m.TodosPage })))
+const RadiologyPage = lazy(() => import('./pages/RadiologyPage').then(m => ({ default: m.RadiologyPage })))
+const InvestmentsPage = lazy(() => import('./pages/InvestmentsPage').then(m => ({ default: m.InvestmentsPage })))
+const SearchPage = lazy(() => import('./pages/SearchPage').then(m => ({ default: m.SearchPage })))
 
 const AppContent = () => {
   const { user, loading } = useAuth();
@@ -53,22 +56,30 @@ const AppContent = () => {
   }
 
   const renderCurrentPage = () => {
-    switch (activeTab) {
-      case 'quick':
-        return <QuickPage />
-      case 'thoughts':
-        return <ThoughtsPage />
-      case 'todos':
-        return <TodosPage />
-      case 'radiology':
-        return <RadiologyPage />
-      case 'investments':
-        return <InvestmentsPage />
-      case 'search':
-        return <SearchPage />
-      default:
-        return <QuickPage />
-    }
+    const PageComponent = () => {
+      switch (activeTab) {
+        case 'quick':
+          return <QuickPage />
+        case 'thoughts':
+          return <ThoughtsPage />
+        case 'todos':
+          return <TodosPage />
+        case 'radiology':
+          return <RadiologyPage />
+        case 'investments':
+          return <InvestmentsPage />
+        case 'search':
+          return <SearchPage />
+        default:
+          return <QuickPage />
+      }
+    };
+
+    return (
+      <LazyPageWrapper>
+        <PageComponent />
+      </LazyPageWrapper>
+    );
   }
 
   return (

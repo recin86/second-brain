@@ -1,21 +1,37 @@
 import type { Thought, Todo, RadiologyNote, Investment } from '../types';
+import { STORAGE_KEYS } from '../constants';
 
-const THOUGHTS_KEY = 'second-brain-thoughts';
-const TODOS_KEY = 'second-brain-todos';
-const RADIOLOGY_KEY = 'second-brain-radiology';
-const INVESTMENTS_KEY = 'second-brain-investments';
+// 타입 가드 함수들
+const isValidThought = (obj: unknown): obj is Thought => {
+  return typeof obj === 'object' && obj !== null && 
+         'id' in obj && 'content' in obj && 'createdAt' in obj && 'tags' in obj;
+};
+
+const isValidTodo = (obj: unknown): obj is Todo => {
+  return typeof obj === 'object' && obj !== null && 
+         'id' in obj && 'content' in obj && 'isCompleted' in obj && 'priority' in obj;
+};
 
 export const storage = {
   // Thoughts
   getThoughts(): Thought[] {
-    const data = localStorage.getItem(THOUGHTS_KEY);
+    const data = localStorage.getItem(STORAGE_KEYS.THOUGHTS);
     if (!data) return [];
-    const thoughts = JSON.parse(data);
-    return thoughts.map((thought: any) => ({ ...thought, createdAt: new Date(thought.createdAt) }));
+    try {
+      const parsed = JSON.parse(data);
+      if (Array.isArray(parsed)) {
+        return parsed
+          .filter(isValidThought)
+          .map(thought => ({ ...thought, createdAt: new Date(thought.createdAt) }));
+      }
+    } catch (error) {
+      console.warn('Failed to parse thoughts from localStorage:', error);
+    }
+    return [];
   },
 
   saveThoughts(thoughts: Thought[]): void {
-    localStorage.setItem(THOUGHTS_KEY, JSON.stringify(thoughts));
+    localStorage.setItem(STORAGE_KEYS.THOUGHTS, JSON.stringify(thoughts));
   },
 
   addThought(thought: Thought): void {
@@ -32,18 +48,27 @@ export const storage = {
 
   // Todos
   getTodos(): Todo[] {
-    const data = localStorage.getItem(TODOS_KEY);
+    const data = localStorage.getItem(STORAGE_KEYS.TODOS);
     if (!data) return [];
-    const todos = JSON.parse(data);
-    return todos.map((todo: any) => ({
-      ...todo,
-      createdAt: new Date(todo.createdAt),
-      dueDate: todo.dueDate ? new Date(todo.dueDate) : undefined,
-    }));
+    try {
+      const parsed = JSON.parse(data);
+      if (Array.isArray(parsed)) {
+        return parsed
+          .filter(isValidTodo)
+          .map(todo => ({
+            ...todo,
+            createdAt: new Date(todo.createdAt),
+            dueDate: todo.dueDate ? new Date(todo.dueDate) : undefined,
+          }));
+      }
+    } catch (error) {
+      console.warn('Failed to parse todos from localStorage:', error);
+    }
+    return [];
   },
 
   saveTodos(todos: Todo[]): void {
-    localStorage.setItem(TODOS_KEY, JSON.stringify(todos));
+    localStorage.setItem(STORAGE_KEYS.TODOS, JSON.stringify(todos));
   },
 
   addTodo(todo: Todo): void {
@@ -69,14 +94,14 @@ export const storage = {
 
   // Radiology Notes
   getRadiologyNotes(): RadiologyNote[] {
-    const data = localStorage.getItem(RADIOLOGY_KEY);
+    const data = localStorage.getItem(STORAGE_KEYS.RADIOLOGY);
     if (!data) return [];
     const notes = JSON.parse(data);
     return notes.map((note: any) => ({ ...note, createdAt: new Date(note.createdAt) }));
   },
 
   saveRadiologyNotes(notes: RadiologyNote[]): void {
-    localStorage.setItem(RADIOLOGY_KEY, JSON.stringify(notes));
+    localStorage.setItem(STORAGE_KEYS.RADIOLOGY, JSON.stringify(notes));
   },
 
   addRadiologyNote(note: RadiologyNote): void {
@@ -105,14 +130,14 @@ export const storage = {
 
   // Investments
   getInvestments(): Investment[] {
-    const data = localStorage.getItem(INVESTMENTS_KEY);
+    const data = localStorage.getItem(STORAGE_KEYS.INVESTMENTS);
     if (!data) return [];
     const investments = JSON.parse(data);
     return investments.map((investment: any) => ({ ...investment, createdAt: new Date(investment.createdAt) }));
   },
 
   saveInvestments(investments: Investment[]): void {
-    localStorage.setItem(INVESTMENTS_KEY, JSON.stringify(investments));
+    localStorage.setItem(STORAGE_KEYS.INVESTMENTS, JSON.stringify(investments));
   },
 
   addInvestment(investment: Investment): void {

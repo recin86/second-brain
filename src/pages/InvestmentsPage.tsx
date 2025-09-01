@@ -3,13 +3,15 @@ import { dataService } from '../services/dataService';
 import type { Investment } from '../types';
 import { useLanguage } from '../contexts/LanguageContext';
 import { isTextLong, getPreviewText } from '../utils/textUtils';
+import { formatDate } from '../utils/dateUtils';
+import { useCardExpansion } from '../hooks/useCardExpansion';
 
 export const InvestmentsPage: React.FC = () => {
   const { t } = useLanguage();
   const [investments, setInvestments] = useState<Investment[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(true);
-  const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
+  const { toggleCardExpansion, isExpanded } = useCardExpansion();
 
   useEffect(() => {
     loadInvestments();
@@ -26,17 +28,6 @@ export const InvestmentsPage: React.FC = () => {
     }
   };
 
-  const toggleCardExpansion = (cardId: string) => {
-    setExpandedCards(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(cardId)) {
-        newSet.delete(cardId);
-      } else {
-        newSet.add(cardId);
-      }
-      return newSet;
-    });
-  };
 
   const handleDeleteInvestment = async (id: string) => {
     if (window.confirm(t('investments.delete_confirm'))) {
@@ -53,15 +44,6 @@ export const InvestmentsPage: React.FC = () => {
     investment.content.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const formatDate = (date: Date) => {
-    return new Intl.DateTimeFormat('ko-KR', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    }).format(date);
-  };
 
   if (isLoading) {
     return (
@@ -133,8 +115,8 @@ export const InvestmentsPage: React.FC = () => {
         <div className="grid gap-4 sm:gap-6">
           {filteredInvestments.map((investment) => {
             const isLong = isTextLong(investment.content);
-            const isExpanded = expandedCards.has(investment.id);
-            const displayContent = isLong && !isExpanded 
+            const cardExpanded = isExpanded(investment.id);
+            const displayContent = isLong && !cardExpanded 
               ? getPreviewText(investment.content) 
               : investment.content;
             
@@ -162,7 +144,7 @@ export const InvestmentsPage: React.FC = () => {
                           onClick={() => toggleCardExpansion(investment.id)}
                           className="mt-2 text-sm text-blue-600 hover:text-blue-800 font-medium transition-colors"
                         >
-                          {isExpanded ? '접기' : '...더보기'}
+                          {cardExpanded ? '접기' : '...더보기'}
                         </button>
                       )}
                     </div>

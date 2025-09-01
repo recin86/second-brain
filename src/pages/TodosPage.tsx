@@ -4,12 +4,14 @@ import type { Todo } from '../types';
 import { useLanguage } from '../contexts/LanguageContext';
 import debounce from '../utils/debounce';
 import { isTextLong, getPreviewText } from '../utils/textUtils';
+import { formatDate } from '../utils/dateUtils';
+import { useCardExpansion } from '../hooks/useCardExpansion';
 
 export const TodosPage: React.FC = () => {
   const { t } = useLanguage();
   const [todos, setTodos] = useState<Todo[]>([]);
   const [filter, setFilter] = useState<'all' | 'pending' | 'completed'>('all');
-  const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
+  const { toggleCardExpansion, isExpanded } = useCardExpansion();
 
   useEffect(() => {
     // 실시간으로 Todos 데이터 구독
@@ -65,13 +67,6 @@ export const TodosPage: React.FC = () => {
   const pendingCount = todos.filter(t => !t.isCompleted).length;
   const completedCount = todos.filter(t => t.isCompleted).length;
 
-  const formatDate = (date: Date, options?: Intl.DateTimeFormatOptions) => {
-    return new Intl.DateTimeFormat('ko-KR', options || {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    }).format(date);
-  };
 
   const getPriorityColor = (priority: Todo['priority']) => {
     switch (priority) {
@@ -91,17 +86,6 @@ export const TodosPage: React.FC = () => {
     }
   };
 
-  const toggleCardExpansion = (cardId: string) => {
-    setExpandedCards(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(cardId)) {
-        newSet.delete(cardId);
-      } else {
-        newSet.add(cardId);
-      }
-      return newSet;
-    });
-  };
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-8 py-6 sm:py-12">
@@ -157,8 +141,8 @@ export const TodosPage: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {sortedTodos.map((todo) => {
             const isLong = isTextLong(todo.content);
-            const isExpanded = expandedCards.has(todo.id);
-            const displayContent = isLong && !isExpanded 
+            const cardExpanded = isExpanded(todo.id);
+            const displayContent = isLong && !cardExpanded 
               ? getPreviewText(todo.content) 
               : todo.content;
             
@@ -215,7 +199,7 @@ export const TodosPage: React.FC = () => {
                           onClick={() => toggleCardExpansion(todo.id)}
                           className="mb-3 text-sm text-blue-600 hover:text-blue-800 font-medium transition-colors"
                         >
-                          {isExpanded ? '접기' : '...더보기'}
+                          {cardExpanded ? '접기' : '...더보기'}
                         </button>
                       )}
                     </div>
