@@ -1,0 +1,3 @@
+import{r as i}from"./index-DEemqsSM.js";const a=t=>t.split(`
+`),d=(t,e=5)=>a(t).length>e,g=(t,e=5)=>{const n=a(t);return n.length<=e?t:n.slice(0,e).join(`
+`)},c=(t,e)=>{const n={year:"numeric",month:"long",day:"numeric",hour:"2-digit",minute:"2-digit"};return new Intl.DateTimeFormat("ko-KR",e||n).format(new Date(t))},l=t=>new Intl.DateTimeFormat("ko-KR",{year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",hour12:!1}).format(new Date(t)),p=t=>new Intl.DateTimeFormat("ko-KR",{year:"numeric",month:"long"}).format(t),f=()=>{const[t,e]=i.useState(new Set);return{expandedCards:t,toggleCardExpansion:r=>{e(s=>{const o=new Set(s);return o.has(r)?o.delete(r):o.add(r),o})},isExpanded:r=>t.has(r)}};export{p as a,c as b,l as f,g,d as i,f as u};
