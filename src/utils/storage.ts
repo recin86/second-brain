@@ -10,30 +10,18 @@ export const storage = {
   getThoughts(): Thought[] {
     const data = localStorage.getItem(THOUGHTS_KEY);
     if (!data) return [];
-    
     const thoughts = JSON.parse(data);
-    return thoughts.map((thought: any) => ({
-      ...thought,
-      createdAt: new Date(thought.createdAt),
-    }));
+    return thoughts.map((thought: any) => ({ ...thought, createdAt: new Date(thought.createdAt) }));
   },
 
   saveThoughts(thoughts: Thought[]): void {
     localStorage.setItem(THOUGHTS_KEY, JSON.stringify(thoughts));
   },
 
-  addThought(content: string): Thought {
+  addThought(thought: Thought): void {
     const thoughts = this.getThoughts();
-    const newThought: Thought = {
-      id: crypto.randomUUID(),
-      content: content.trim(),
-      createdAt: new Date(),
-      tags: [],
-    };
-    
-    thoughts.unshift(newThought);
+    thoughts.unshift(thought);
     this.saveThoughts(thoughts);
-    return newThought;
   },
 
   deleteThought(id: string): void {
@@ -46,7 +34,6 @@ export const storage = {
   getTodos(): Todo[] {
     const data = localStorage.getItem(TODOS_KEY);
     if (!data) return [];
-    
     const todos = JSON.parse(data);
     return todos.map((todo: any) => ({
       ...todo,
@@ -59,44 +46,17 @@ export const storage = {
     localStorage.setItem(TODOS_KEY, JSON.stringify(todos));
   },
 
-  addTodo(content: string): Todo {
+  addTodo(todo: Todo): void {
     const todos = this.getTodos();
-    const newTodo: Todo = {
-      id: crypto.randomUUID(),
-      content: content.trim(),
-      isCompleted: false,
-      priority: 'medium',
-      createdAt: new Date(),
-    };
-    
-    todos.unshift(newTodo);
+    todos.unshift(todo);
     this.saveTodos(todos);
-    return newTodo;
   },
 
-  toggleTodo(id: string): void {
+  updateTodo(id: string, updates: Partial<Todo>): void {
     const todos = this.getTodos();
-    const todo = todos.find(t => t.id === id);
-    if (todo) {
-      todo.isCompleted = !todo.isCompleted;
-      this.saveTodos(todos);
-    }
-  },
-
-  updateTodoDueDate(id: string, dueDate: Date | undefined): void {
-    const todos = this.getTodos();
-    const todo = todos.find(t => t.id === id);
-    if (todo) {
-      todo.dueDate = dueDate;
-      this.saveTodos(todos);
-    }
-  },
-
-  updateTodoPriority(id: string, priority: Todo['priority']): void {
-    const todos = this.getTodos();
-    const todo = todos.find(t => t.id === id);
-    if (todo) {
-      todo.priority = priority;
+    const index = todos.findIndex(t => t.id === id);
+    if (index !== -1) {
+      todos[index] = { ...todos[index], ...updates };
       this.saveTodos(todos);
     }
   },
@@ -111,30 +71,18 @@ export const storage = {
   getRadiologyNotes(): RadiologyNote[] {
     const data = localStorage.getItem(RADIOLOGY_KEY);
     if (!data) return [];
-    
     const notes = JSON.parse(data);
-    return notes.map((note: any) => ({
-      ...note,
-      createdAt: new Date(note.createdAt),
-    }));
+    return notes.map((note: any) => ({ ...note, createdAt: new Date(note.createdAt) }));
   },
 
   saveRadiologyNotes(notes: RadiologyNote[]): void {
     localStorage.setItem(RADIOLOGY_KEY, JSON.stringify(notes));
   },
 
-  addRadiologyNote(content: string, tags: string[]): RadiologyNote {
+  addRadiologyNote(note: RadiologyNote): void {
     const notes = this.getRadiologyNotes();
-    const newNote: RadiologyNote = {
-      id: crypto.randomUUID(),
-      content: content.trim(),
-      tags,
-      createdAt: new Date(),
-    };
-    
-    notes.unshift(newNote);
+    notes.unshift(note);
     this.saveRadiologyNotes(notes);
-    return newNote;
   },
 
   deleteRadiologyNote(id: string): void {
@@ -143,23 +91,15 @@ export const storage = {
     this.saveRadiologyNotes(notes);
   },
 
-  getRadiologyNotesByTag(tag: string): RadiologyNote[] {
-    const notes = this.getRadiologyNotes();
-    return notes.filter(note => note.tags.includes(tag.toLowerCase()));
-  },
-
   getAllRadiologySubtags(): string[] {
     const notes = this.getRadiologyNotes();
     const allTags = new Set<string>();
-    
     notes.forEach(note => {
       const radIndex = note.tags.findIndex(tag => tag === '#rad');
       if (radIndex !== -1) {
-        // #rad 이후의 태그들만 수집
         note.tags.slice(radIndex + 1).forEach(tag => allTags.add(tag));
       }
     });
-    
     return Array.from(allTags).sort();
   },
 
@@ -167,30 +107,18 @@ export const storage = {
   getInvestments(): Investment[] {
     const data = localStorage.getItem(INVESTMENTS_KEY);
     if (!data) return [];
-    
     const investments = JSON.parse(data);
-    return investments.map((investment: any) => ({
-      ...investment,
-      createdAt: new Date(investment.createdAt),
-    }));
+    return investments.map((investment: any) => ({ ...investment, createdAt: new Date(investment.createdAt) }));
   },
 
   saveInvestments(investments: Investment[]): void {
     localStorage.setItem(INVESTMENTS_KEY, JSON.stringify(investments));
   },
 
-  addInvestment(content: string): Investment {
+  addInvestment(investment: Investment): void {
     const investments = this.getInvestments();
-    const newInvestment: Investment = {
-      id: crypto.randomUUID(),
-      content: content.trim(),
-      createdAt: new Date(),
-      tags: [],
-    };
-    
-    investments.unshift(newInvestment);
+    investments.unshift(investment);
     this.saveInvestments(investments);
-    return newInvestment;
   },
 
   deleteInvestment(id: string): void {

@@ -3,11 +3,13 @@ import { dataService } from '../services/dataService';
 import type { Todo } from '../types';
 import { useLanguage } from '../contexts/LanguageContext';
 import debounce from '../utils/debounce';
+import { isTextLong, getPreviewText } from '../utils/textUtils';
 
 export const TodosPage: React.FC = () => {
   const { t } = useLanguage();
   const [todos, setTodos] = useState<Todo[]>([]);
   const [filter, setFilter] = useState<'all' | 'pending' | 'completed'>('all');
+  const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     // 실시간으로 Todos 데이터 구독
@@ -73,7 +75,7 @@ export const TodosPage: React.FC = () => {
 
   const getPriorityColor = (priority: Todo['priority']) => {
     switch (priority) {
-      case 'high': return 'btn-primary';
+      case 'high': return 'bg-red-600 hover:bg-red-700 text-white border-red-700';
       case 'medium': return 'btn-secondary';  
       case 'low': return 'btn-accent';
       default: return 'text-date';
@@ -87,6 +89,18 @@ export const TodosPage: React.FC = () => {
       case 'low': return t('todos.priority.low');
       default: return t('todos.priority.medium');
     }
+  };
+
+  const toggleCardExpansion = (cardId: string) => {
+    setExpandedCards(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(cardId)) {
+        newSet.delete(cardId);
+      } else {
+        newSet.add(cardId);
+      }
+      return newSet;
+    });
   };
 
   return (
@@ -141,54 +155,70 @@ export const TodosPage: React.FC = () => {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {sortedTodos.map((todo) => (
-            <div
-              key={todo.id}
-              className={`card card-hover relative group ${todo.isCompleted ? 'opacity-60' : ''}`}
-            >
-              <button
-                onClick={() => handleDeleteTodo(todo.id)}
-                className="text-muted hover:text-red-600 absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10"
-                aria-label="Delete todo"
+          {sortedTodos.map((todo) => {
+            const isLong = isTextLong(todo.content);
+            const isExpanded = expandedCards.has(todo.id);
+            const displayContent = isLong && !isExpanded 
+              ? getPreviewText(todo.content) 
+              : todo.content;
+            
+            return (
+              <div
+                key={todo.id}
+                className={`card card-hover relative group ${todo.isCompleted ? 'opacity-60' : ''}`}
               >
-                🗑️
-              </button>
-
-              <div className="flex items-start space-x-4 h-full">
                 <button
-                  onClick={() => handleToggleComplete(todo.id)}
-                  className={`flex-shrink-0 w-7 h-7 rounded-2xl border-2 flex items-center justify-center transition-all mt-1 ${
-                    todo.isCompleted
-                      ? 'shadow-md'
-                      : 'hover:bg-opacity-10'
-                  }`}
-                  style={todo.isCompleted
-                    ? {backgroundColor: '#8ABF92', borderColor: '#8ABF92', color: '#038C3E'}
-                    : {borderColor: '#8ABF92', backgroundColor: 'transparent', color: '#8ABF92'}}
+                  onClick={() => handleDeleteTodo(todo.id)}
+                  className="text-muted hover:text-red-600 absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10"
+                  aria-label="Delete todo"
                 >
-                  {todo.isCompleted && (
-                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                      <path
-                        fillRule="evenodd"
-                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                  )}
+                  🗑️
                 </button>
-                
-                <div className="flex-1 min-w-0 flex flex-col justify-between h-full">
-                  <div>
-                    <p
-                      className={`text-base font-semibold leading-relaxed mb-3 pr-8 ${
-                        todo.isCompleted
-                          ? 'line-through text-muted'
-                          : 'text-primary'
-                      }`}
-                    >
-                      {todo.content}
-                    </p>
-                  </div>
+
+                <div className="flex items-start space-x-4 h-full">
+                  <button
+                    onClick={() => handleToggleComplete(todo.id)}
+                    className={`flex-shrink-0 w-7 h-7 rounded-2xl border-2 flex items-center justify-center transition-all mt-1 ${
+                      todo.isCompleted
+                        ? 'shadow-md'
+                        : 'hover:bg-opacity-10'
+                    }`}
+                    style={todo.isCompleted
+                      ? {backgroundColor: '#8ABF92', borderColor: '#8ABF92', color: '#038C3E'}
+                      : {borderColor: '#8ABF92', backgroundColor: 'transparent', color: '#8ABF92'}}
+                  >
+                    {todo.isCompleted && (
+                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                        <path
+                          fillRule="evenodd"
+                          d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                    )}
+                  </button>
+                  
+                  <div className="flex-1 min-w-0 flex flex-col justify-between h-full">
+                    <div>
+                      <p
+                        className={`text-base font-semibold leading-relaxed mb-3 pr-8 whitespace-pre-line ${
+                          todo.isCompleted
+                            ? 'line-through text-muted'
+                            : 'text-primary'
+                        }`}
+                      >
+                        {displayContent}
+                      </p>
+                      
+                      {isLong && (
+                        <button
+                          onClick={() => toggleCardExpansion(todo.id)}
+                          className="mb-3 text-sm text-blue-600 hover:text-blue-800 font-medium transition-colors"
+                        >
+                          {isExpanded ? '접기' : '...더보기'}
+                        </button>
+                      )}
+                    </div>
 
                   <div className="flex flex-col mt-auto pt-2">
                     <div className="flex items-center justify-between">
@@ -231,7 +261,8 @@ export const TodosPage: React.FC = () => {
                 </div>
               </div>
             </div>
-          ))}
+          );
+          })}
         </div>
       )}
     </div>

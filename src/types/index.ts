@@ -19,6 +19,7 @@ export interface Todo {
   priority: 'high' | 'medium' | 'low';
   createdAt: Date;
   dueDate?: Date;
+  googleEventId?: string;
 }
 
 export interface Investment {

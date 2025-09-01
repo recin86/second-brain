@@ -1,31 +1,47 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { QuickInput } from '../components/forms/QuickInput';
-import { storage } from '../utils/storage';
-import type { Thought, Todo } from '../types';
+import { dataService } from '../services/dataService';
+import type { Thought, Todo, RadiologyNote, Investment } from '../types';
 import { useLanguage } from '../contexts/LanguageContext';
+import { isTextLong, getPreviewText } from '../utils/textUtils';
+
+type RecentEntry = (Thought | Todo | RadiologyNote | Investment) & {
+  entryType: 'thought' | 'todo' | 'radiology' | 'investment';
+};
 
 export const QuickPage: React.FC = () => {
   const { t } = useLanguage();
-  const [recentEntries, setRecentEntries] = useState<(Thought | Todo)[]>([]);
-
-  const loadRecentEntries = () => {
-    const thoughts = storage.getThoughts().slice(0, 3);
-    const todos = storage.getTodos().slice(0, 3);
-    
-    const allEntries = [...thoughts, ...todos]
-      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
-      .slice(0, 5);
-    
-    setRecentEntries(allEntries);
-  };
+  
+  const [thoughts, setThoughts] = useState<Thought[]>([]);
+  const [todos, setTodos] = useState<Todo[]>([]);
+  const [radiologyNotes, setRadiologyNotes] = useState<RadiologyNote[]>([]);
+  const [investments, setInvestments] = useState<Investment[]>([]);
+  const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    loadRecentEntries();
+    const unsubThoughts = dataService.subscribeToThoughts(setThoughts);
+    const unsubTodos = dataService.subscribeToTodos(setTodos);
+    const unsubRadiology = dataService.subscribeToRadiologyNotes(setRadiologyNotes);
+    const unsubInvestments = dataService.subscribeToInvestments(setInvestments);
+
+    return () => {
+      unsubThoughts();
+      unsubTodos();
+      unsubRadiology();
+      unsubInvestments();
+    };
   }, []);
 
-  const handleEntryAdded = () => {
-    loadRecentEntries();
-  };
+  const recentEntries = useMemo(() => {
+    const allThoughts = thoughts.map(e => ({ ...e, entryType: 'thought' as const }));
+    const allTodos = todos.map(e => ({ ...e, entryType: 'todo' as const }));
+    const allRadiology = radiologyNotes.map(e => ({ ...e, entryType: 'radiology' as const }));
+    const allInvestments = investments.map(e => ({ ...e, entryType: 'investment' as const }));
+
+    return [...allThoughts, ...allTodos, ...allRadiology, ...allInvestments]
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .slice(0, 5);
+  }, [thoughts, todos, radiologyNotes, investments]);
 
   const formatTime = (date: Date) => {
     return new Intl.DateTimeFormat('ko-KR', {
@@ -35,23 +51,54 @@ export const QuickPage: React.FC = () => {
       hour: '2-digit',
       minute: '2-digit',
       hour12: false
-    }).format(date);
+    }).format(new Date(date));
   };
 
-  const getEntryIcon = (entry: Thought | Todo) => {
-    if ('isCompleted' in entry) {
-      return entry.isCompleted ? '✅' : '⏰';
+  const getEntryIcon = (entry: RecentEntry) => {
+    switch (entry.entryType) {
+      case 'todo':
+        return (entry as Todo).isCompleted ? '✅' : '⏰';
+      case 'thought':
+        return '💭';
+      case 'radiology':
+        return '🩺';
+      case 'investment':
+        return '💰';
+      default:
+        return '📝';
     }
-    return '💭';
   };
 
-  const getEntryType = (entry: Thought | Todo) => {
-    return 'isCompleted' in entry ? t('type.todo') : t('type.thought');
+  const getEntryType = (entry: RecentEntry) => {
+    switch (entry.entryType) {
+      case 'todo':
+        return t('type.todo');
+      case 'thought':
+        return t('type.thought');
+      case 'radiology':
+        return t('type.radiology');
+      case 'investment':
+        return t('type.investment');
+      default:
+        return '';
+    }
+  };
+
+  const toggleCardExpansion = (cardId: string) => {
+    setExpandedCards(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(cardId)) {
+        newSet.delete(cardId);
+      } else {
+        newSet.add(cardId);
+      }
+      return newSet;
+    });
   };
 
   return (
     <div className="max-w-7xl mx-auto px-0 sm:px-8 py-4 sm:py-8">
-      <QuickInput onEntryAdded={handleEntryAdded} />
+      <QuickInput />
       
       {recentEntries.length > 0 && (
         <div className="px-4 sm:px-0">
@@ -66,7 +113,12 @@ export const QuickPage: React.FC = () => {
           
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
             {recentEntries.map((entry) => {
-              const isThought = getEntryType(entry) === '생각';
+              const isLong = isTextLong(entry.content);
+              const isExpanded = expandedCards.has(entry.id);
+              const displayContent = isLong && !isExpanded 
+                ? getPreviewText(entry.content) 
+                : entry.content;
+              
               return (
                 <div
                   key={entry.id}
@@ -83,9 +135,18 @@ export const QuickPage: React.FC = () => {
                     </div>
                     
                     <div>
-                      <p className="text-base leading-relaxed text-primary font-medium">
-                        {entry.content}
+                      <p className="text-base leading-relaxed text-primary font-medium whitespace-pre-line">
+                        {displayContent}
                       </p>
+                      
+                      {isLong && (
+                        <button
+                          onClick={() => toggleCardExpansion(entry.id)}
+                          className="mt-2 text-sm text-blue-600 hover:text-blue-800 font-medium transition-colors"
+                        >
+                          {isExpanded ? '접기' : '...더보기'}
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>

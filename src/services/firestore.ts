@@ -1,7 +1,7 @@
 import {
   collection,
   doc,
-  addDoc,
+  setDoc,
   updateDoc,
   deleteDoc,
   getDocs,
@@ -9,7 +9,6 @@ import {
   query,
   orderBy,
   where,
-  limit,
   onSnapshot,
   serverTimestamp,
   Timestamp
@@ -18,18 +17,12 @@ import type { User } from 'firebase/auth';
 import { db } from '../config/firebase';
 import type { Thought, Todo, RadiologyNote, Investment } from '../types';
 
-// Firestore에서 가져온 데이터를 로컬 타입으로 변환
 const convertFirestoreTimestamp = (timestamp: any): Date => {
-  if (timestamp instanceof Timestamp) {
-    return timestamp.toDate();
-  }
-  if (timestamp && timestamp.seconds) {
-    return new Timestamp(timestamp.seconds, timestamp.nanoseconds).toDate();
-  }
+  if (timestamp instanceof Timestamp) return timestamp.toDate();
+  if (timestamp && timestamp.seconds) return new Timestamp(timestamp.seconds, timestamp.nanoseconds).toDate();
   return new Date(timestamp);
 };
 
-// Firestore 컬렉션 경로 생성
 const getUserCollectionPath = (userId: string, collectionName: string) => {
   return `users/${userId}/${collectionName}`;
 };
@@ -41,50 +34,32 @@ export class FirestoreService {
     this.userId = user.uid;
   }
 
-  // Thoughts CRUD
+  // Thoughts
   async getThoughts(): Promise<Thought[]> {
-    const collectionRef = collection(db, getUserCollectionPath(this.userId, 'thoughts'));
-    const q = query(collectionRef, orderBy('createdAt', 'desc'));
-    const querySnapshot = await getDocs(q);
-    
-    return querySnapshot.docs.map(doc => ({
+    const q = query(collection(db, getUserCollectionPath(this.userId, 'thoughts')), orderBy('createdAt', 'desc'));
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data(),
       createdAt: convertFirestoreTimestamp(doc.data().createdAt)
     })) as Thought[];
   }
 
-  async addThought(content: string): Promise<Thought> {
-    const collectionRef = collection(db, getUserCollectionPath(this.userId, 'thoughts'));
-    const thoughtData = {
-      content: content.trim(),
-      tags: [],
-      createdAt: serverTimestamp(),
-    };
-
-    const docRef = await addDoc(collectionRef, thoughtData);
-    
-    // 생성된 문서 반환
-    const newDoc = await getDoc(docRef);
-    return {
-      id: newDoc.id,
-      ...newDoc.data(),
-      createdAt: convertFirestoreTimestamp(newDoc.data()?.createdAt)
-    } as Thought;
+  async addThought(thought: Thought): Promise<void> {
+    const docRef = doc(db, getUserCollectionPath(this.userId, 'thoughts'), thought.id);
+    const { id, ...thoughtData } = thought;
+    await setDoc(docRef, { ...thoughtData, createdAt: serverTimestamp() });
   }
 
   async deleteThought(thoughtId: string): Promise<void> {
-    const docRef = doc(db, getUserCollectionPath(this.userId, 'thoughts'), thoughtId);
-    await deleteDoc(docRef);
+    await deleteDoc(doc(db, getUserCollectionPath(this.userId, 'thoughts'), thoughtId));
   }
 
-  // Todos CRUD
+  // Todos
   async getTodos(): Promise<Todo[]> {
-    const collectionRef = collection(db, getUserCollectionPath(this.userId, 'todos'));
-    const q = query(collectionRef, orderBy('createdAt', 'desc'));
-    const querySnapshot = await getDocs(q);
-    
-    return querySnapshot.docs.map(doc => ({
+    const q = query(collection(db, getUserCollectionPath(this.userId, 'todos')), orderBy('createdAt', 'desc'));
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data(),
       createdAt: convertFirestoreTimestamp(doc.data().createdAt),
@@ -92,51 +67,47 @@ export class FirestoreService {
     })) as Todo[];
   }
 
-  async addTodo(content: string, dueDate?: Date): Promise<Todo> {
-    const collectionRef = collection(db, getUserCollectionPath(this.userId, 'todos'));
-    const todoData = {
-      content: content.trim(),
-      isCompleted: false,
-      priority: 'medium' as const,
-      createdAt: serverTimestamp(),
-      ...(dueDate && { dueDate: Timestamp.fromDate(dueDate) })
-    };
-
-    const docRef = await addDoc(collectionRef, todoData);
+  async addTodo(todo: Todo): Promise<void> {
+    const docRef = doc(db, getUserCollectionPath(this.userId, 'todos'), todo.id);
+    const { id, ...todoData } = todo;
     
-    const newDoc = await getDoc(docRef);
-    return {
-      id: newDoc.id,
-      ...newDoc.data(),
-      createdAt: convertFirestoreTimestamp(newDoc.data()?.createdAt)
-    } as Todo;
+    // undefined 값들을 필터링
+    const cleanTodoData: any = { ...todoData, createdAt: serverTimestamp() };
+    if (cleanTodoData.dueDate === undefined) {
+      delete cleanTodoData.dueDate;
+    }
+    if (cleanTodoData.googleEventId === undefined) {
+      delete cleanTodoData.googleEventId;
+    }
+    
+    await setDoc(docRef, cleanTodoData);
   }
 
   async updateTodo(todoId: string, updates: Partial<Todo>): Promise<void> {
     const docRef = doc(db, getUserCollectionPath(this.userId, 'todos'), todoId);
-    const updateData = { ...updates };
+    const updateData: any = { ...updates };
     
-    // Date 객체를 Timestamp로 변환
-    if (updateData.dueDate) {
+    // undefined 값들을 필터링하고 dueDate를 Timestamp로 변환
+    if (updateData.dueDate === undefined) {
+      delete updateData.dueDate;
+    } else if (updateData.dueDate) {
       updateData.dueDate = Timestamp.fromDate(updateData.dueDate);
+    }
+    
+    if (updateData.googleEventId === undefined) {
+      delete updateData.googleEventId;
     }
     
     await updateDoc(docRef, updateData);
   }
 
   async deleteTodo(todoId: string): Promise<void> {
-    const docRef = doc(db, getUserCollectionPath(this.userId, 'todos'), todoId);
-    await deleteDoc(docRef);
+    await deleteDoc(doc(db, getUserCollectionPath(this.userId, 'todos'), todoId));
   }
 
   async getTodoById(todoId: string): Promise<Todo | null> {
-    const docRef = doc(db, getUserCollectionPath(this.userId, 'todos'), todoId);
-    const docSnap = await getDoc(docRef);
-
-    if (!docSnap.exists()) {
-      return null;
-    }
-
+    const docSnap = await getDoc(doc(db, getUserCollectionPath(this.userId, 'todos'), todoId));
+    if (!docSnap.exists()) return null;
     const data = docSnap.data();
     return {
       id: docSnap.id,
@@ -146,65 +117,53 @@ export class FirestoreService {
     } as Todo;
   }
 
-  // Radiology Notes CRUD
+  // Radiology Notes
   async getRadiologyNotes(): Promise<RadiologyNote[]> {
-    const collectionRef = collection(db, getUserCollectionPath(this.userId, 'radiology'));
-    const q = query(collectionRef, orderBy('createdAt', 'desc'));
-    const querySnapshot = await getDocs(q);
-    
-    return querySnapshot.docs.map(doc => ({
+    const q = query(collection(db, getUserCollectionPath(this.userId, 'radiology')), orderBy('createdAt', 'desc'));
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data(),
       createdAt: convertFirestoreTimestamp(doc.data().createdAt)
     })) as RadiologyNote[];
   }
 
-  async addRadiologyNote(content: string, tags: string[]): Promise<RadiologyNote> {
-    const collectionRef = collection(db, getUserCollectionPath(this.userId, 'radiology'));
-    const noteData = {
-      content: content.trim(),
-      tags,
-      createdAt: serverTimestamp(),
-    };
-
-    const docRef = await addDoc(collectionRef, noteData);
-    
-    const newDoc = await getDoc(docRef);
-    return {
-      id: newDoc.id,
-      ...newDoc.data(),
-      createdAt: convertFirestoreTimestamp(newDoc.data()?.createdAt)
-    } as RadiologyNote;
+  async addRadiologyNote(note: RadiologyNote): Promise<void> {
+    const docRef = doc(db, getUserCollectionPath(this.userId, 'radiology'), note.id);
+    const { id, ...noteData } = note;
+    await setDoc(docRef, { ...noteData, createdAt: serverTimestamp() });
   }
 
   async deleteRadiologyNote(noteId: string): Promise<void> {
-    const docRef = doc(db, getUserCollectionPath(this.userId, 'radiology'), noteId);
-    await deleteDoc(docRef);
+    await deleteDoc(doc(db, getUserCollectionPath(this.userId, 'radiology'), noteId));
   }
 
-  async getRadiologyNotesByTag(tag: string): Promise<RadiologyNote[]> {
-    const collectionRef = collection(db, getUserCollectionPath(this.userId, 'radiology'));
-    const q = query(
-      collectionRef,
-      where('tags', 'array-contains', tag.toLowerCase()),
-      orderBy('createdAt', 'desc')
-    );
-    const querySnapshot = await getDocs(q);
-    
-    return querySnapshot.docs.map(doc => ({
+  // Investments
+  async getInvestments(): Promise<Investment[]> {
+    const q = query(collection(db, getUserCollectionPath(this.userId, 'investments')), orderBy('createdAt', 'desc'));
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data(),
       createdAt: convertFirestoreTimestamp(doc.data().createdAt)
-    })) as RadiologyNote[];
+    })) as Investment[];
   }
 
-  // 실시간 구독 (Real-time subscriptions)
+  async addInvestment(investment: Investment): Promise<void> {
+    const docRef = doc(db, getUserCollectionPath(this.userId, 'investments'), investment.id);
+    const { id, ...investmentData } = investment;
+    await setDoc(docRef, { ...investmentData, createdAt: serverTimestamp() });
+  }
+
+  async deleteInvestment(id: string): Promise<void> {
+    await deleteDoc(doc(db, getUserCollectionPath(this.userId, 'investments'), id));
+  }
+
+  // Subscriptions
   subscribeToThoughts(callback: (thoughts: Thought[]) => void) {
-    const collectionRef = collection(db, getUserCollectionPath(this.userId, 'thoughts'));
-    const q = query(collectionRef, orderBy('createdAt', 'desc'));
-    
-    return onSnapshot(q, (querySnapshot) => {
-      const thoughts = querySnapshot.docs.map(doc => ({
+    const q = query(collection(db, getUserCollectionPath(this.userId, 'thoughts')), orderBy('createdAt', 'desc'));
+    return onSnapshot(q, (snapshot) => {
+      const thoughts = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data(),
         createdAt: convertFirestoreTimestamp(doc.data().createdAt)
@@ -214,11 +173,9 @@ export class FirestoreService {
   }
 
   subscribeToTodos(callback: (todos: Todo[]) => void) {
-    const collectionRef = collection(db, getUserCollectionPath(this.userId, 'todos'));
-    const q = query(collectionRef, orderBy('createdAt', 'desc'));
-    
-    return onSnapshot(q, (querySnapshot) => {
-      const todos = querySnapshot.docs.map(doc => ({
+    const q = query(collection(db, getUserCollectionPath(this.userId, 'todos')), orderBy('createdAt', 'desc'));
+    return onSnapshot(q, (snapshot) => {
+      const todos = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data(),
         createdAt: convertFirestoreTimestamp(doc.data().createdAt),
@@ -229,11 +186,9 @@ export class FirestoreService {
   }
 
   subscribeToRadiologyNotes(callback: (notes: RadiologyNote[]) => void) {
-    const collectionRef = collection(db, getUserCollectionPath(this.userId, 'radiology'));
-    const q = query(collectionRef, orderBy('createdAt', 'desc'));
-    
-    return onSnapshot(q, (querySnapshot) => {
-      const notes = querySnapshot.docs.map(doc => ({
+    const q = query(collection(db, getUserCollectionPath(this.userId, 'radiology')), orderBy('createdAt', 'desc'));
+    return onSnapshot(q, (snapshot) => {
+      const notes = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data(),
         createdAt: convertFirestoreTimestamp(doc.data().createdAt)
@@ -242,48 +197,10 @@ export class FirestoreService {
     });
   }
 
-  // Investments CRUD
-  async getInvestments(): Promise<Investment[]> {
-    const collectionRef = collection(db, getUserCollectionPath(this.userId, 'investments'));
-    const q = query(collectionRef, orderBy('createdAt', 'desc'));
-    const querySnapshot = await getDocs(q);
-    
-    return querySnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data(),
-      createdAt: convertFirestoreTimestamp(doc.data().createdAt)
-    })) as Investment[];
-  }
-
-  async addInvestment(content: string): Promise<Investment> {
-    const collectionRef = collection(db, getUserCollectionPath(this.userId, 'investments'));
-    const newInvestment = {
-      content: content.trim(),
-      tags: [],
-      createdAt: serverTimestamp()
-    };
-
-    const docRef = await addDoc(collectionRef, newInvestment);
-    
-    return {
-      id: docRef.id,
-      content: content.trim(),
-      tags: [],
-      createdAt: new Date()
-    };
-  }
-
-  async deleteInvestment(id: string): Promise<void> {
-    const docRef = doc(db, getUserCollectionPath(this.userId, 'investments'), id);
-    await deleteDoc(docRef);
-  }
-
   subscribeToInvestments(callback: (investments: Investment[]) => void) {
-    const collectionRef = collection(db, getUserCollectionPath(this.userId, 'investments'));
-    const q = query(collectionRef, orderBy('createdAt', 'desc'));
-    
-    return onSnapshot(q, (querySnapshot) => {
-      const investments = querySnapshot.docs.map(doc => ({
+    const q = query(collection(db, getUserCollectionPath(this.userId, 'investments')), orderBy('createdAt', 'desc'));
+    return onSnapshot(q, (snapshot) => {
+      const investments = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data(),
         createdAt: convertFirestoreTimestamp(doc.data().createdAt)

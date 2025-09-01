@@ -1,28 +1,57 @@
-import React, { useState, useEffect } from 'react';
-import { storage } from '../utils/storage';
+import React, { useState, useEffect, useMemo } from 'react';
+import { dataService } from '../services/dataService';
 import type { RadiologyNote } from '../types';
 import { useLanguage } from '../contexts/LanguageContext';
+import { isTextLong, getPreviewText } from '../utils/textUtils';
 
 export const RadiologyPage: React.FC = () => {
   const { t } = useLanguage();
   const [notes, setNotes] = useState<RadiologyNote[]>([]);
   const [selectedTag, setSelectedTag] = useState<string>('all');
-  const [subtags, setSubtags] = useState<string[]>([]);
+  const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    loadNotes();
+    const unsubscribe = dataService.subscribeToRadiologyNotes(setNotes);
+    return () => unsubscribe();
   }, []);
 
-  const loadNotes = () => {
-    const allNotes = storage.getRadiologyNotes();
-    const allSubtags = storage.getAllRadiologySubtags();
-    setNotes(allNotes);
-    setSubtags(allSubtags);
+  const subtags = useMemo(() => {
+    const allTags = new Set<string>();
+    notes.forEach(note => {
+      const radIndex = note.tags.findIndex(tag => tag === '#rad');
+      if (radIndex !== -1) {
+        note.tags.slice(radIndex + 1).forEach(tag => allTags.add(tag));
+      }
+    });
+    return Array.from(allTags).sort();
+  }, [notes]);
+
+  const filteredNotes = useMemo(() => {
+    if (selectedTag === 'all') return notes;
+    return notes.filter(note => note.tags.includes(selectedTag));
+  }, [notes, selectedTag]);
+
+  const getTagCount = (tag: string) => {
+    return notes.filter(note => note.tags.includes(tag)).length;
   };
 
-  const filteredNotes = selectedTag === 'all' 
-    ? notes 
-    : storage.getRadiologyNotesByTag(selectedTag);
+  const toggleCardExpansion = (cardId: string) => {
+    setExpandedCards(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(cardId)) {
+        newSet.delete(cardId);
+      } else {
+        newSet.add(cardId);
+      }
+      return newSet;
+    });
+  };
+
+  const handleDelete = (id: string) => {
+    if (window.confirm(t('radiology.delete_confirm'))) {
+      dataService.deleteRadiologyNote(id);
+    }
+  };
 
   const formatDate = (date: Date) => {
     return new Intl.DateTimeFormat('ko-KR', {
@@ -31,7 +60,7 @@ export const RadiologyPage: React.FC = () => {
       day: 'numeric',
       hour: '2-digit',
       minute: '2-digit'
-    }).format(date);
+    }).format(new Date(date));
   };
 
   const formatTagForDisplay = (tag: string) => {
@@ -66,22 +95,19 @@ export const RadiologyPage: React.FC = () => {
               >
                 {t('radiology.all')} ({notes.length})
               </button>
-              {subtags.map(tag => {
-                const tagCount = storage.getRadiologyNotesByTag(tag).length;
-                return (
-                  <button
-                    key={tag}
-                    onClick={() => setSelectedTag(tag)}
-                    className={`px-3 py-2 sm:px-4 sm:py-2 rounded-lg font-semibold transition-all duration-200 text-sm sm:text-base ${
-                      selectedTag === tag
-                        ? 'bg-primary text-white shadow-md'
-                        : 'text-primary hover:text-primary/80 bg-transparent hover:bg-primary/10'
-                    }`}
-                  >
-                    {formatTagForDisplay(tag)} ({tagCount})
-                  </button>
-                );
-              })}
+              {subtags.map(tag => (
+                <button
+                  key={tag}
+                  onClick={() => setSelectedTag(tag)}
+                  className={`px-3 py-2 sm:px-4 sm:py-2 rounded-lg font-semibold transition-all duration-200 text-sm sm:text-base ${
+                    selectedTag === tag
+                      ? 'bg-primary text-white shadow-md'
+                      : 'text-primary hover:text-primary/80 bg-transparent hover:bg-primary/10'
+                  }`}
+                >
+                  {formatTagForDisplay(tag)} ({getTagCount(tag)})
+                </button>
+              ))}
             </div>
           </div>
         </div>
@@ -99,53 +125,66 @@ export const RadiologyPage: React.FC = () => {
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredNotes.map((note) => (
-            <div
-              key={note.id}
-              className="card card-hover relative group"
-            >
-              <div className="flex flex-col">
-                <div className="flex items-start justify-between mb-4">
-                  <p className="text-base leading-relaxed font-medium text-primary pr-8">
-                    {note.content}
-                  </p>
-                  <button
-                    onClick={() => {
-                      if (window.confirm(t('radiology.delete_confirm'))) {
-                        storage.deleteRadiologyNote(note.id);
-                        loadNotes();
-                      }
-                    }}
-                    className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-muted hover:text-red-600 p-1"
-                    aria-label="Delete note"
-                  >
-                    🗑️
-                  </button>
-                </div>
-                
-                {/* Tags */}
-                <div className="flex flex-wrap gap-2 mb-3">
-                  {note.tags.map((tag, index) => (
-                    <span
-                      key={index}
-                      className={`px-2 py-1 rounded-lg text-xs font-semibold ${
-                        tag === '#rad' 
-                          ? 'bg-green-100 text-green-800' 
-                          : 'badge'
-                      }`}
+        <div className="space-y-6">
+          {filteredNotes.map((note) => {
+            const isLong = isTextLong(note.content);
+            const isExpanded = expandedCards.has(note.id);
+            const displayContent = isLong && !isExpanded 
+              ? getPreviewText(note.content) 
+              : note.content;
+            
+            return (
+              <div
+                key={note.id}
+                className="card card-hover relative group"
+              >
+                <div className="flex flex-col">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex-1 pr-8">
+                      <p className="text-base leading-relaxed font-medium text-primary whitespace-pre-line">
+                        {displayContent}
+                      </p>
+                      
+                      {isLong && (
+                        <button
+                          onClick={() => toggleCardExpansion(note.id)}
+                          className="mt-2 text-sm text-blue-600 hover:text-blue-800 font-medium transition-colors"
+                        >
+                          {isExpanded ? '접기' : '...더보기'}
+                        </button>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => handleDelete(note.id)}
+                      className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-muted hover:text-red-600 p-1"
+                      aria-label="Delete note"
                     >
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-                
-                <div className="badge ml-auto">
-                  {formatDate(note.createdAt)}
+                      🗑️
+                    </button>
+                  </div>
+                  
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    {note.tags.map((tag, index) => (
+                      <span
+                        key={index}
+                        className={`px-2 py-1 rounded-lg text-xs font-semibold ${
+                          tag === '#rad' 
+                            ? 'bg-green-100 text-green-800' 
+                            : 'badge'
+                        }`}
+                      >
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                  
+                  <div className="badge ml-auto">
+                    {formatDate(new Date(note.createdAt))}
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

@@ -4,11 +4,9 @@ import type { ClassificationResult } from '../../utils/classifier';
 import { dataService } from '../../services/dataService';
 import { useLanguage } from '../../contexts/LanguageContext';
 
-interface QuickInputProps {
-  onEntryAdded?: () => void;
-}
+interface QuickInputProps {}
 
-export const QuickInput: React.FC<QuickInputProps> = ({ onEntryAdded }) => {
+export const QuickInput: React.FC<QuickInputProps> = () => {
   const { t } = useLanguage();
   const [input, setInput] = useState('');
   const [classification, setClassification] = useState<ClassificationResult | null>(null);
@@ -30,12 +28,17 @@ export const QuickInput: React.FC<QuickInputProps> = ({ onEntryAdded }) => {
   }, [input]);
 
   const handleSubmit = async (e?: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e && e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-    } else if (e && e.key !== 'Enter') {
-      return;
+    if (e) {
+      if (e.key === 'Enter' && e.shiftKey) {
+        return;
+      }
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+      } else if (e.key !== 'Enter') {
+        return;
+      }
     }
-    
+
     if (!input.trim() || isSubmitting) return;
 
     setIsSubmitting(true);
@@ -55,12 +58,14 @@ export const QuickInput: React.FC<QuickInputProps> = ({ onEntryAdded }) => {
       
       setInput('');
       setClassification(null);
-      onEntryAdded?.();
       
-      // 포커스 유지
-      setTimeout(() => {
-        textareaRef.current?.focus();
-      }, 0);
+      // 포커스를 더 확실하게 유지
+      requestAnimationFrame(() => {
+        if (textareaRef.current) {
+          textareaRef.current.focus();
+          textareaRef.current.setSelectionRange(0, 0);
+        }
+      });
       
     } catch (error) {
       console.error('Failed to save entry:', error);
@@ -69,8 +74,14 @@ export const QuickInput: React.FC<QuickInputProps> = ({ onEntryAdded }) => {
     }
   };
 
-  const handleButtonClick = () => {
-    handleSubmit();
+  const handleButtonClick = async () => {
+    await handleSubmit();
+    // 버튼 클릭 후에도 포커스 유지
+    requestAnimationFrame(() => {
+      if (textareaRef.current) {
+        textareaRef.current.focus();
+      }
+    });
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -79,10 +90,10 @@ export const QuickInput: React.FC<QuickInputProps> = ({ onEntryAdded }) => {
 
   return (
     <div className="px-0 sm:px-0 mb-6 sm:mb-8">
-      <div className="bg-white/90 backdrop-blur-sm rounded-xl sm:rounded-3xl p-3 sm:p-8 shadow-lg border border-primary/10 mx-2 sm:mx-0">
+      <div className="bg-primary rounded-xl sm:rounded-3xl p-3 sm:p-8 shadow-lg border border-transparent mx-2 sm:mx-0">
         <div className="space-y-4 sm:space-y-6">
           <div>
-            <h2 className="text-2xl sm:text-3xl font-bold mb-4 sm:mb-6 tracking-tight text-primary">
+            <h2 className="text-2xl sm:text-3xl font-bold mb-4 sm:mb-6 tracking-tight text-white">
               {t('quick.title')}
             </h2>
           </div>
@@ -94,12 +105,11 @@ export const QuickInput: React.FC<QuickInputProps> = ({ onEntryAdded }) => {
               onChange={handleChange}
               onKeyDown={handleSubmit}
               placeholder={t('quick.placeholder')}
-              className="w-full min-h-[100px] sm:min-h-[120px] p-4 text-base sm:text-xl border border-primary/20 bg-white/70 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-transparent resize-none placeholder-gray-400 font-normal leading-relaxed text-primary"
+              className="w-full min-h-[100px] sm:min-h-[120px] p-4 text-base sm:text-xl border border-transparent bg-gray-100 text-gray-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary resize-none placeholder-gray-500 font-normal leading-relaxed"
               disabled={isSubmitting}
               rows={3}
             />
             
-            {/* 모바일용 입력 버튼 */}
             <button
               onClick={handleButtonClick}
               disabled={!input.trim() || isSubmitting}
@@ -126,21 +136,12 @@ export const QuickInput: React.FC<QuickInputProps> = ({ onEntryAdded }) => {
           </div>
           
           {classification && (
-            <div className="text-left text-sm sm:text-base text-primary/80 bg-primary/10 px-3 py-2 rounded-lg">
+            <div className="text-left text-sm sm:text-base text-white/80 bg-white/10 px-3 py-2 rounded-lg">
               <span className="text-lg mr-2">{classification.icon}</span>
               {classification.statusMessage}
             </div>
           )}
           
-          {/* 데스크톱용 힌트 */}
-          <div className="hidden sm:block text-sm text-primary/60 text-center">
-            💡 {t('quick.hint')}
-          </div>
-          
-          {/* 모바일용 힌트 */}
-          <div className="block sm:hidden text-xs text-primary/60 text-center">
-            💡 버튼을 눌러서 저장하세요
-          </div>
         </div>
       </div>
     </div>

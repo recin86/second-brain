@@ -1,27 +1,34 @@
 import React, { useState, useEffect } from 'react';
-import { storage } from '../utils/storage';
+import { dataService } from '../services/dataService';
 import type { Thought } from '../types';
 import { useLanguage } from '../contexts/LanguageContext';
+import { isTextLong, getPreviewText } from '../utils/textUtils';
 
 export const ThoughtsPage: React.FC = () => {
   const { t } = useLanguage();
   const [thoughts, setThoughts] = useState<Thought[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedMonths, setExpandedMonths] = useState<Record<string, boolean>>({});
+  const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    const initialThoughts = storage.getThoughts();
-    setThoughts(initialThoughts);
-    // 모든 월을 기본적으로 열린 상태로 설정
-    const initialExpandedState: Record<string, boolean> = {};
-    initialThoughts.forEach(thought => {
-      const monthKey = new Intl.DateTimeFormat('ko-KR', {
-        year: 'numeric',
-        month: 'long'
-      }).format(thought.createdAt);
-      initialExpandedState[monthKey] = true;
+    const unsubscribe = dataService.subscribeToThoughts((updatedThoughts) => {
+      setThoughts(updatedThoughts);
+      // 모든 월을 기본적으로 열린 상태로 설정
+      const initialExpandedState: Record<string, boolean> = {};
+      updatedThoughts.forEach(thought => {
+        const monthKey = new Intl.DateTimeFormat('ko-KR', {
+          year: 'numeric',
+          month: 'long'
+        }).format(thought.createdAt);
+        initialExpandedState[monthKey] = true;
+      });
+      setExpandedMonths(prev => ({ ...prev, ...initialExpandedState }));
     });
-    setExpandedMonths(initialExpandedState);
+
+    return () => {
+      unsubscribe();
+    };
   }, []);
 
   const filteredThoughts = thoughts.filter(thought =>
@@ -50,6 +57,18 @@ export const ThoughtsPage: React.FC = () => {
     acc[monthKey].push(thought);
     return acc;
   }, {} as Record<string, Thought[]>);
+
+  const toggleCardExpansion = (cardId: string) => {
+    setExpandedCards(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(cardId)) {
+        newSet.delete(cardId);
+      } else {
+        newSet.add(cardId);
+      }
+      return newSet;
+    });
+  };
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-8 py-6 sm:py-12">
@@ -113,35 +132,53 @@ export const ThoughtsPage: React.FC = () => {
                 </div>
                 {expandedMonths[month] && (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {monthThoughts.map((thought) => (
-                      <div
-                        key={thought.id}
-                        className="card card-hover relative group"
-                      >
-                        <div className="flex flex-col">
-                          <div className="flex items-start justify-between mb-4">
-                            <p className="text-base leading-relaxed font-medium text-primary pr-8">
-                              {thought.content}
-                            </p>
-                            <button
-                              onClick={() => {
-                                if (window.confirm(t('thoughts.delete_confirm'))) {
-                                  storage.deleteThought(thought.id);
-                                  setThoughts(storage.getThoughts());
-                                }
-                              }}
-                              className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-muted hover:text-red-600 p-1"
-                              aria-label="Delete thought"
-                            >
-                              🗑️
-                            </button>
-                          </div>
-                          <div className="badge ml-auto">
-                            {formatDate(thought.createdAt)}
+                    {monthThoughts.map((thought) => {
+                      const isLong = isTextLong(thought.content);
+                      const isExpanded = expandedCards.has(thought.id);
+                      const displayContent = isLong && !isExpanded 
+                        ? getPreviewText(thought.content) 
+                        : thought.content;
+                      
+                      return (
+                        <div
+                          key={thought.id}
+                          className="card card-hover relative group"
+                        >
+                          <div className="flex flex-col">
+                            <div className="flex items-start justify-between mb-4">
+                              <div className="pr-8 flex-1">
+                                <p className="text-base leading-relaxed font-medium text-primary whitespace-pre-line">
+                                  {displayContent}
+                                </p>
+                                
+                                {isLong && (
+                                  <button
+                                    onClick={() => toggleCardExpansion(thought.id)}
+                                    className="mt-2 text-sm text-blue-600 hover:text-blue-800 font-medium transition-colors"
+                                  >
+                                    {isExpanded ? '접기' : '...더보기'}
+                                  </button>
+                                )}
+                              </div>
+                              <button
+                                onClick={async () => {
+                                  if (window.confirm(t('thoughts.delete_confirm'))) {
+                                    await dataService.deleteThought(thought.id);
+                                  }
+                                }}
+                                className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-muted hover:text-red-600 p-1"
+                                aria-label="Delete thought"
+                              >
+                                🗑️
+                              </button>
+                            </div>
+                            <div className="badge ml-auto">
+                              {formatDate(thought.createdAt)}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </div>
