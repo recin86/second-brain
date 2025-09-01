@@ -39,49 +39,50 @@ export const RadiologyPage: React.FC = () => {
   };
 
   return (
-    <div className="max-w-7xl mx-auto p-8">
-      <div className="mb-8">
-        <div className="card-header mb-8">
-          <div className="flex items-center mb-6">
-            <div className="w-12 h-12 bg-white/25 rounded-lg mr-4 flex items-center justify-center">
-              <span className="text-2xl">🏥</span>
+    <div className="max-w-7xl mx-auto px-4 sm:px-8 py-6 sm:py-12">
+      <div className="mb-6 sm:mb-8">
+        <div className="bg-primary text-white rounded-xl sm:rounded-2xl p-4 sm:p-8 mb-6 sm:mb-8 shadow-lg">
+          <div className="flex items-center mb-4 sm:mb-6">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white/25 rounded-lg mr-3 sm:mr-4 flex items-center justify-center">
+              <span className="text-xl sm:text-2xl">🔬</span>
             </div>
-            <div>
-              <h2 className="text-3xl font-bold tracking-tight">{t('radiology.title')}</h2>
-              <p className="opacity-90 text-lg">
+            <div className="min-w-0">
+              <h2 className="text-xl sm:text-3xl font-bold tracking-tight truncate">{t('radiology.title')}</h2>
+              <p className="opacity-90 text-sm sm:text-lg">
                 {t('radiology.subtitle')}
               </p>
             </div>
           </div>
           
-          {/* Tag Filter Buttons */}
-          <div className="flex flex-wrap gap-3">
-            <button
-              onClick={() => setSelectedTag('all')}
-              className={`px-4 py-2 rounded-lg font-semibold transition-all duration-200 ${
-                selectedTag === 'all'
-                  ? 'btn-secondary shadow-md'
-                  : 'text-white/80 hover:text-white bg-transparent'
-              }`}
-            >
-{t('radiology.all')} ({notes.length})
-            </button>
-            {subtags.map(tag => {
-              const tagCount = storage.getRadiologyNotesByTag(tag).length;
-              return (
-                <button
-                  key={tag}
-                  onClick={() => setSelectedTag(tag)}
-                  className={`px-4 py-2 rounded-lg font-semibold transition-all duration-200 ${
-                    selectedTag === tag
-                      ? 'btn-secondary shadow-md'
-                      : 'text-white/80 hover:text-white bg-transparent'
-                  }`}
-                >
-                  {formatTagForDisplay(tag)} ({tagCount})
-                </button>
-              );
-            })}
+          <div className="bg-white/95 rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-md">
+            <div className="flex flex-wrap gap-2 sm:gap-3">
+              <button
+                onClick={() => setSelectedTag('all')}
+                className={`px-3 py-2 sm:px-4 sm:py-2 rounded-lg font-semibold transition-all duration-200 text-sm sm:text-base ${
+                  selectedTag === 'all'
+                    ? 'bg-primary text-white shadow-md'
+                    : 'text-primary hover:text-primary/80 bg-transparent hover:bg-primary/10'
+                }`}
+              >
+                {t('radiology.all')} ({notes.length})
+              </button>
+              {subtags.map(tag => {
+                const tagCount = storage.getRadiologyNotesByTag(tag).length;
+                return (
+                  <button
+                    key={tag}
+                    onClick={() => setSelectedTag(tag)}
+                    className={`px-3 py-2 sm:px-4 sm:py-2 rounded-lg font-semibold transition-all duration-200 text-sm sm:text-base ${
+                      selectedTag === tag
+                        ? 'bg-primary text-white shadow-md'
+                        : 'text-primary hover:text-primary/80 bg-transparent hover:bg-primary/10'
+                    }`}
+                  >
+                    {formatTagForDisplay(tag)} ({tagCount})
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
       </div>

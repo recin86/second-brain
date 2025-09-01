@@ -124,22 +124,22 @@ export const SearchPage: React.FC = () => {
 
   return (
     <div className="max-w-7xl mx-auto p-8">
-      <div className="mb-8">
-        <div className="card-header mb-8">
-          <div className="flex items-center mb-6">
-            <div className="w-12 h-12 bg-white/25 rounded-lg mr-4 flex items-center justify-center">
-              <span className="text-2xl">🔍</span>
+      <div className="mb-6 sm:mb-8">
+        <div className="bg-primary text-white rounded-xl sm:rounded-2xl p-4 sm:p-8 mb-6 sm:mb-8 shadow-lg">
+          <div className="flex items-center mb-4 sm:mb-6">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white/25 rounded-lg mr-3 sm:mr-4 flex items-center justify-center">
+              <span className="text-xl sm:text-2xl">🔍</span>
             </div>
-            <div>
-              <h2 className="text-3xl font-bold tracking-tight">{t('search.title')}</h2>
-              <p className="opacity-90 text-lg">
+            <div className="min-w-0">
+              <h2 className="text-xl sm:text-3xl font-bold tracking-tight truncate">{t('search.title')}</h2>
+              <p className="opacity-90 text-sm sm:text-lg">
                 {t('search.subtitle')}
               </p>
             </div>
           </div>
           
           {/* 검색창 */}
-          <div className="card-content mb-6">
+          <div className="bg-white/95 rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-md mb-6">
             <div className="flex items-center space-x-3 mb-4">
               <span className="text-muted">🔍</span>
               <input
@@ -179,7 +179,7 @@ export const SearchPage: React.FC = () => {
           
           {/* 고급 필터 */}
           {showFilters && (
-            <div className="card-content mb-6">
+            <div className="bg-white/95 rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-md mb-6">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {/* 타입 필터 */}
                 <div>

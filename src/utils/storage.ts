@@ -1,8 +1,9 @@
-import type { Thought, Todo, RadiologyNote } from '../types';
+import type { Thought, Todo, RadiologyNote, Investment } from '../types';
 
 const THOUGHTS_KEY = 'second-brain-thoughts';
 const TODOS_KEY = 'second-brain-todos';
 const RADIOLOGY_KEY = 'second-brain-radiology';
+const INVESTMENTS_KEY = 'second-brain-investments';
 
 export const storage = {
   // Thoughts
@@ -160,5 +161,41 @@ export const storage = {
     });
     
     return Array.from(allTags).sort();
+  },
+
+  // Investments
+  getInvestments(): Investment[] {
+    const data = localStorage.getItem(INVESTMENTS_KEY);
+    if (!data) return [];
+    
+    const investments = JSON.parse(data);
+    return investments.map((investment: any) => ({
+      ...investment,
+      createdAt: new Date(investment.createdAt),
+    }));
+  },
+
+  saveInvestments(investments: Investment[]): void {
+    localStorage.setItem(INVESTMENTS_KEY, JSON.stringify(investments));
+  },
+
+  addInvestment(content: string): Investment {
+    const investments = this.getInvestments();
+    const newInvestment: Investment = {
+      id: crypto.randomUUID(),
+      content: content.trim(),
+      createdAt: new Date(),
+      tags: [],
+    };
+    
+    investments.unshift(newInvestment);
+    this.saveInvestments(investments);
+    return newInvestment;
+  },
+
+  deleteInvestment(id: string): void {
+    let investments = this.getInvestments();
+    investments = investments.filter(investment => investment.id !== id);
+    this.saveInvestments(investments);
   },
 };

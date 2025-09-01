@@ -50,21 +50,21 @@ export const QuickPage: React.FC = () => {
   };
 
   return (
-    <div className="max-w-7xl mx-auto p-8">
+    <div className="max-w-7xl mx-auto px-0 sm:px-8 py-4 sm:py-8">
       <QuickInput onEntryAdded={handleEntryAdded} />
       
       {recentEntries.length > 0 && (
-        <div>
-          <div className="mb-8">
-            <h3 className="text-2xl font-bold text-gray-900 mb-2 tracking-tight">
+        <div className="px-4 sm:px-0">
+          <div className="mb-6 sm:mb-8">
+            <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2 tracking-tight">
               {t('quick.recent')}
             </h3>
-            <p className="text-gray-500 text-lg font-medium">
+            <p className="text-gray-500 text-base sm:text-lg font-medium">
               {t('quick.recent_subtitle')}
             </p>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
             {recentEntries.map((entry) => {
               const isThought = getEntryType(entry) === '생각';
               return (

@@ -1,5 +1,5 @@
 export interface ClassificationResult {
-  type: 'thought' | 'todo' | 'radiology';
+  type: 'thought' | 'todo' | 'radiology' | 'investment';
   content: string;
   icon: string;
   description: string;
@@ -13,7 +13,20 @@ import { classifyRadiologyInput, extractTags, removeTagsFromContent } from './ta
 export function classifyInput(input: string): ClassificationResult {
   const trimmed = input.trim();
   
-  // Check for Radiology note first
+  // Check for Investment note first (ends with ')
+  if (trimmed.endsWith("'")) {
+    const content = trimmed.slice(0, -1).trim();
+    
+    return {
+      type: 'investment',
+      content: content,
+      icon: '💰',
+      description: '투자로 저장',
+      statusMessage: '내 투자에 저장됩니다'
+    };
+  }
+  
+  // Check for Radiology note
   const radiologyResult = classifyRadiologyInput(trimmed);
   if (radiologyResult) {
     return {

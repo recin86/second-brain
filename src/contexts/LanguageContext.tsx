@@ -19,12 +19,13 @@ const translations = {
     'nav.thoughts': '내 생각',
     'nav.todos': '내 할 일',
     'nav.radiology': '영상의학',
+    'nav.investments': '내 투자',
     'nav.search': '검색',
     
     // Quick Input
     'quick.title': '무엇을 기록할까요?',
     'quick.subtitle': '생각이나 할 일을 자유롭게 적어보세요',
-    'quick.placeholder': '여기에 입력하세요... (할 일은 끝에 ; 추가)',
+    'quick.placeholder': '여기에 입력하세요... (할 일은 끝에 ;, 투자는 끝에 \' 추가)',
     'quick.hint': '💡 Shift+Enter로 줄바꿈, Enter로 저장',
     'quick.saving': '저장 중...',
     'quick.save': 'Enter로 저장',
@@ -69,6 +70,15 @@ const translations = {
     'radiology.empty_subtitle': '빠른 입력에서 #Rad 태그를 추가해보세요!',
     'radiology.delete_confirm': '정말 이 노트를 삭제하시겠습니까?',
     
+    // Investments
+    'investments.title': '내 투자',
+    'investments.subtitle': '투자 관련 기록들을 확인하고 관리하세요',
+    'investments.search': '투자 기록 검색...',
+    'investments.empty_all': '아직 투자 기록이 없어요',
+    'investments.empty_subtitle': '빠른 입력에서 끝에 \'를 붙여 투자 기록을 등록해보세요!',
+    'investments.count': '개',
+    'investments.delete_confirm': '정말 이 투자 기록을 삭제하시겠습니까?',
+    
     // Search
     'search.title': '검색',
     'search.subtitle': '모든 노트, 할 일, 영상의학 기록을 검색하세요',
@@ -98,8 +108,10 @@ const translations = {
     'type.thought': '생각',
     'type.todo': '할 일',
     'type.radiology': '영상의학',
+    'type.investment': '투자',
     'classification.thought': '생각으로 저장됩니다',
     'classification.todo': '할 일로 저장됩니다',
+    'classification.investment': '투자로 저장됩니다',
   },
   en: {
     // Header
@@ -111,12 +123,13 @@ const translations = {
     'nav.thoughts': 'My Thoughts',
     'nav.todos': 'My Tasks',
     'nav.radiology': 'Radiology',
+    'nav.investments': 'My Investments',
     'nav.search': 'Search',
     
     // Quick Input
     'quick.title': 'What would you like to record?',
     'quick.subtitle': 'Feel free to jot down thoughts or tasks',
-    'quick.placeholder': 'Type here... (add ; at the end for tasks)',
+    'quick.placeholder': 'Type here... (add ; for tasks, \' for investments)',
     'quick.hint': '💡 Shift+Enter for new line, Enter to save',
     'quick.saving': 'Saving...',
     'quick.save': 'Press Enter to save',
@@ -161,6 +174,15 @@ const translations = {
     'radiology.empty_subtitle': 'Add #Rad tag in Quick Input to create radiology notes!',
     'radiology.delete_confirm': 'Are you sure you want to delete this note?',
     
+    // Investments
+    'investments.title': 'My Investments',
+    'investments.subtitle': 'View and manage your investment records',
+    'investments.search': 'Search investment records...',
+    'investments.empty_all': 'No investment records yet',
+    'investments.empty_subtitle': 'Add \' at the end in Quick Input to create investment records!',
+    'investments.count': 'items',
+    'investments.delete_confirm': 'Are you sure you want to delete this investment record?',
+    
     // Search
     'search.title': 'Search',
     'search.subtitle': 'Search across all your notes, tasks, and radiology entries',
@@ -190,8 +212,10 @@ const translations = {
     'type.thought': 'Thought',
     'type.todo': 'Task',
     'type.radiology': 'Radiology',
+    'type.investment': 'Investment',
     'classification.thought': 'Will be saved as a thought',
     'classification.todo': 'Will be saved as a task',
+    'classification.investment': 'Will be saved as an investment',
   }
 };
 

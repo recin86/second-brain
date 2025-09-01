@@ -16,7 +16,7 @@ import {
 } from 'firebase/firestore';
 import type { User } from 'firebase/auth';
 import { db } from '../config/firebase';
-import type { Thought, Todo, RadiologyNote } from '../types';
+import type { Thought, Todo, RadiologyNote, Investment } from '../types';
 
 // Firestore에서 가져온 데이터를 로컬 타입으로 변환
 const convertFirestoreTimestamp = (timestamp: any): Date => {
@@ -239,6 +239,56 @@ export class FirestoreService {
         createdAt: convertFirestoreTimestamp(doc.data().createdAt)
       })) as RadiologyNote[];
       callback(notes);
+    });
+  }
+
+  // Investments CRUD
+  async getInvestments(): Promise<Investment[]> {
+    const collectionRef = collection(db, getUserCollectionPath(this.userId, 'investments'));
+    const q = query(collectionRef, orderBy('createdAt', 'desc'));
+    const querySnapshot = await getDocs(q);
+    
+    return querySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+      createdAt: convertFirestoreTimestamp(doc.data().createdAt)
+    })) as Investment[];
+  }
+
+  async addInvestment(content: string): Promise<Investment> {
+    const collectionRef = collection(db, getUserCollectionPath(this.userId, 'investments'));
+    const newInvestment = {
+      content: content.trim(),
+      tags: [],
+      createdAt: serverTimestamp()
+    };
+
+    const docRef = await addDoc(collectionRef, newInvestment);
+    
+    return {
+      id: docRef.id,
+      content: content.trim(),
+      tags: [],
+      createdAt: new Date()
+    };
+  }
+
+  async deleteInvestment(id: string): Promise<void> {
+    const docRef = doc(db, getUserCollectionPath(this.userId, 'investments'), id);
+    await deleteDoc(docRef);
+  }
+
+  subscribeToInvestments(callback: (investments: Investment[]) => void) {
+    const collectionRef = collection(db, getUserCollectionPath(this.userId, 'investments'));
+    const q = query(collectionRef, orderBy('createdAt', 'desc'));
+    
+    return onSnapshot(q, (querySnapshot) => {
+      const investments = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        createdAt: convertFirestoreTimestamp(doc.data().createdAt)
+      })) as Investment[];
+      callback(investments);
     });
   }
 }

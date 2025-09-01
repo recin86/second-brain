@@ -5,6 +5,7 @@ import { QuickPage } from './pages/QuickPage'
 import { ThoughtsPage } from './pages/ThoughtsPage'
 import { TodosPage } from './pages/TodosPage'
 import { RadiologyPage } from './pages/RadiologyPage'
+import { InvestmentsPage } from './pages/InvestmentsPage'
 import { SearchPage } from './pages/SearchPage'
 import { LoginForm } from './components/auth/LoginForm'
 import { LanguageProvider } from './contexts/LanguageContext'
@@ -13,7 +14,7 @@ import { dataService } from './services/dataService'
 
 const AppContent = () => {
   const { user, loading } = useAuth();
-  const [activeTab, setActiveTab] = useState<'quick' | 'thoughts' | 'todos' | 'radiology' | 'search'>('quick')
+  const [activeTab, setActiveTab] = useState<'quick' | 'thoughts' | 'todos' | 'radiology' | 'investments' | 'search'>('quick')
   const [dataServiceReady, setDataServiceReady] = useState(false);
 
   // 사용자가 로그인하면 데이터 서비스 초기화
@@ -61,6 +62,8 @@ const AppContent = () => {
         return <TodosPage />
       case 'radiology':
         return <RadiologyPage />
+      case 'investments':
+        return <InvestmentsPage />
       case 'search':
         return <SearchPage />
       default:
@@ -72,7 +75,7 @@ const AppContent = () => {
     <div className="min-h-screen transition-all duration-500">
       <Header />
       <Navigation activeTab={activeTab} onTabChange={setActiveTab} />
-      <main className="py-6">
+      <main className="py-4 sm:py-6">
         {renderCurrentPage()}
       </main>
     </div>

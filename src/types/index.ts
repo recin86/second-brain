@@ -21,8 +21,16 @@ export interface Todo {
   dueDate?: Date;
 }
 
+export interface Investment {
+  id: string;
+  content: string;
+  createdAt: Date;
+  tags: string[];
+}
+
 export interface AppStore {
   thoughts: Thought[];
   todos: Todo[];
   radiologyNotes: RadiologyNote[];
+  investments: Investment[];
 }

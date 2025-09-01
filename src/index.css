@@ -129,3 +129,33 @@ body {
   @apply text-lg font-semibold;
   color: #8ABF92;
 }
+
+/* 스크롤바 숨기기 */
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* Internet Explorer 10+ */
+  scrollbar-width: none;  /* Firefox */
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;  /* Safari and Chrome */
+}
+
+/* 입력 버튼 강제 녹색 */
+.submit-button-green {
+  background-color: #038C3E !important;
+  border: none !important;
+  outline: none !important;
+}
+
+.submit-button-green:hover {
+  background-color: #02703A !important;
+}
+
+.submit-button-green:disabled {
+  background-color: #9ca3af !important;
+  cursor: not-allowed !important;
+}
+
+/* Primary 배경 색상 정의 */
+.bg-primary {
+  background-color: #038C3E !important;
+}

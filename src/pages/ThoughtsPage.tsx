@@ -52,29 +52,29 @@ export const ThoughtsPage: React.FC = () => {
   }, {} as Record<string, Thought[]>);
 
   return (
-    <div className="max-w-7xl mx-auto p-8">
-      <div className="mb-8">
-        <div className="card-header mb-8">
-          <div className="flex items-center mb-6">
-            <div className="w-12 h-12 bg-white/25 rounded-lg mr-4 flex items-center justify-center">
-              <span className="text-2xl">💭</span>
+    <div className="max-w-7xl mx-auto px-4 sm:px-8 py-6 sm:py-12">
+      <div className="mb-6 sm:mb-8">
+        <div className="bg-primary text-white rounded-xl sm:rounded-2xl p-4 sm:p-8 mb-6 sm:mb-8 shadow-lg">
+          <div className="flex items-center mb-4 sm:mb-6">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white/25 rounded-lg mr-3 sm:mr-4 flex items-center justify-center">
+              <span className="text-xl sm:text-2xl">💭</span>
             </div>
-            <div>
-              <h2 className="text-3xl font-bold tracking-tight">{t('thoughts.title')}</h2>
-              <p className="opacity-90 text-lg">
+            <div className="min-w-0">
+              <h2 className="text-xl sm:text-3xl font-bold tracking-tight truncate">{t('thoughts.title')}</h2>
+              <p className="opacity-90 text-sm sm:text-lg">
                 {t('thoughts.subtitle')}
               </p>
             </div>
           </div>
-          <div className="card-content">
+          <div className="bg-white/95 rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-md">
             <div className="flex items-center space-x-3">
-              <span className="text-muted">🔍</span>
+              <span className="text-muted text-lg sm:text-xl">🔍</span>
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder={t('thoughts.search')}
-                className="w-full text-lg border-0 bg-transparent focus:outline-none placeholder-gray-400 text-primary"
+                className="w-full text-base sm:text-lg border-0 bg-transparent focus:outline-none placeholder-gray-400 text-primary"
               />
             </div>
           </div>

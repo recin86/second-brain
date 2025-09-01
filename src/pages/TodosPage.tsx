@@ -90,38 +90,40 @@ export const TodosPage: React.FC = () => {
   };
 
   return (
-    <div className="max-w-7xl mx-auto p-8">
-      <div className="mb-8">
-        <div className="card-header mb-8">
-          <div className="flex items-center mb-6">
-            <div className="w-12 h-12 bg-white/25 rounded-lg mr-4 flex items-center justify-center">
-              <span className="text-2xl">✅</span>
+    <div className="max-w-7xl mx-auto px-4 sm:px-8 py-6 sm:py-12">
+      <div className="mb-6 sm:mb-8">
+        <div className="bg-primary text-white rounded-xl sm:rounded-2xl p-4 sm:p-8 mb-6 sm:mb-8 shadow-lg">
+          <div className="flex items-center mb-4 sm:mb-6">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white/25 rounded-lg mr-3 sm:mr-4 flex items-center justify-center">
+              <span className="text-xl sm:text-2xl">✅</span>
             </div>
-            <div>
-              <h2 className="text-3xl font-bold tracking-tight">{t('todos.title')}</h2>
-              <p className="opacity-90 text-lg">
+            <div className="min-w-0">
+              <h2 className="text-xl sm:text-3xl font-bold tracking-tight truncate">{t('todos.title')}</h2>
+              <p className="opacity-90 text-sm sm:text-lg">
                 {t('todos.subtitle')}
               </p>
             </div>
           </div>
-          <div className="flex space-x-3">
-            {[
-              { key: 'all', label: t('todos.all'), count: todos.length },
-              { key: 'pending', label: t('todos.pending'), count: pendingCount },
-              { key: 'completed', label: t('todos.completed'), count: completedCount }
-            ].map((tab) => (
-              <button
-                key={tab.key}
-                onClick={() => setFilter(tab.key as any)}
-                className={`px-4 py-2 rounded-lg font-semibold transition-all duration-200 ${
-                  filter === tab.key
-                    ? 'btn-secondary shadow-md'
-                    : 'text-primary hover:text-primary/80 bg-transparent'
-                }`}
-              >
-                {tab.label} {tab.count}
-              </button>
-            ))}
+          <div className="bg-white/95 rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-md">
+            <div className="flex space-x-2 sm:space-x-3 overflow-x-auto">
+              {[
+                { key: 'all', label: t('todos.all'), count: todos.length },
+                { key: 'pending', label: t('todos.pending'), count: pendingCount },
+                { key: 'completed', label: t('todos.completed'), count: completedCount }
+              ].map((tab) => (
+                <button
+                  key={tab.key}
+                  onClick={() => setFilter(tab.key as any)}
+                  className={`px-3 py-2 sm:px-4 sm:py-2 rounded-lg font-semibold transition-all duration-200 whitespace-nowrap text-sm sm:text-base ${
+                    filter === tab.key
+                      ? 'bg-primary text-white shadow-md'
+                      : 'text-primary hover:text-primary/80 bg-transparent hover:bg-primary/10'
+                  }`}
+                >
+                  {tab.label} ({tab.count})
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       </div>

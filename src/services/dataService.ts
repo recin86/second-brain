@@ -2,7 +2,7 @@ import type { User } from 'firebase/auth';
 import { storage } from '../utils/storage';
 import { FirestoreService } from './firestore';
 import { DataMigration } from '../utils/dataMigration';
-import type { Thought, Todo, RadiologyNote } from '../types';
+import type { Thought, Todo, RadiologyNote, Investment } from '../types';
 
 import { getIsGoogleSignedIn, createEvent, updateEvent, deleteEvent } from './googleCalendar';
 
@@ -239,6 +239,44 @@ export class DataService {
     return storage.getAllRadiologySubtags();
   }
 
+  // Investments 관리
+  async getInvestments(): Promise<Investment[]> {
+    if (this.firestoreService && this.isOnline) {
+      try {
+        return await this.firestoreService.getInvestments();
+      } catch (error) {
+        console.warn('Failed to get investments from Firebase, using local:', error);
+      }
+    }
+    return storage.getInvestments();
+  }
+
+  async addInvestment(content: string): Promise<Investment> {
+    const localInvestment = storage.addInvestment(content);
+
+    if (this.firestoreService && this.isOnline) {
+      try {
+        await this.firestoreService.addInvestment(content);
+      } catch (error) {
+        console.warn('Failed to save investment to Firebase, saved locally only:', error);
+      }
+    }
+
+    return localInvestment;
+  }
+
+  async deleteInvestment(id: string): Promise<void> {
+    storage.deleteInvestment(id);
+
+    if (this.firestoreService && this.isOnline) {
+      try {
+        await this.firestoreService.deleteInvestment(id);
+      } catch (error) {
+        console.warn('Failed to delete investment from Firebase:', error);
+      }
+    }
+  }
+
   // 실시간 구독 (Firebase 사용 시)
   subscribeToThoughts(callback: (thoughts: Thought[]) => void) {
     if (this.firestoreService && this.isOnline) {
@@ -265,6 +303,15 @@ export class DataService {
     }
     
     callback(storage.getRadiologyNotes());
+    return () => {};
+  }
+
+  subscribeToInvestments(callback: (investments: Investment[]) => void) {
+    if (this.firestoreService && this.isOnline) {
+      return this.firestoreService.subscribeToInvestments(callback);
+    }
+    
+    callback(storage.getInvestments());
     return () => {};
   }
 
