@@ -287,28 +287,17 @@ export const TodosPage: React.FC = () => {
                       <div className="flex flex-col space-y-2 mt-3">
                         <div className="flex items-center justify-between">
                           {!todo.isCompleted && (
-                            <div className="relative">
-                              <input
-                                type="date"
-                                value={todo.dueDate ? todo.dueDate.toISOString().split('T')[0] : ''}
-                                onChange={(e) => handleSetDueDate(todo.id, e)}
-                                className={`font-bold px-3 py-1 rounded-xl text-xs transition-colors duration-200 cursor-pointer border-none outline-none bg-transparent ${
-                                  todo.dueDate
-                                    ? 'btn-primary'
-                                    : 'text-date hover:bg-green-50'
-                                }`}
-                                style={{
-                                  colorScheme: 'light',
-                                  minWidth: todo.dueDate ? 'auto' : '120px'
-                                }}
-                                aria-label={todo.dueDate ? t('todos.due') : t('todos.add_due')}
-                              />
-                              {!todo.dueDate && (
-                                <span className="absolute inset-0 flex items-center px-3 pointer-events-none text-xs text-date">
-                                  {t('todos.add_due')}
-                                </span>
-                              )}
-                            </div>
+                            <input
+                              type="date"
+                              value={todo.dueDate ? todo.dueDate.toISOString().split('T')[0] : ''}
+                              onChange={(e) => handleSetDueDate(todo.id, e)}
+                              className={`font-bold px-3 py-1 rounded-xl text-xs transition-colors duration-200 cursor-pointer ${
+                                todo.dueDate
+                                  ? 'btn-primary'
+                                  : 'text-date hover:bg-green-50 border border-gray-200'
+                              }`}
+                              placeholder="마감일 지정"
+                            />
                           )}
                           <button
                             onClick={() => handleSetPriority(todo.id, todo.priority)}
