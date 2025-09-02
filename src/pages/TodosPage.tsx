@@ -287,17 +287,32 @@ export const TodosPage: React.FC = () => {
                       <div className="flex flex-col space-y-2 mt-3">
                         <div className="flex items-center justify-between">
                           {!todo.isCompleted && (
-                            <input
-                              type="date"
-                              value={todo.dueDate ? todo.dueDate.toISOString().split('T')[0] : ''}
-                              onChange={(e) => handleSetDueDate(todo.id, e)}
-                              className={`font-bold px-3 py-1 rounded-xl text-xs transition-colors duration-200 cursor-pointer ${
-                                todo.dueDate
-                                  ? 'btn-primary'
-                                  : 'text-date hover:bg-green-50 border border-gray-200'
-                              }`}
-                              placeholder="마감일 지정"
-                            />
+                            <div className="relative">
+                              <input
+                                type="date"
+                                value={todo.dueDate ? todo.dueDate.toISOString().split('T')[0] : ''}
+                                onChange={(e) => handleSetDueDate(todo.id, e)}
+                                className="absolute opacity-0 w-full h-full cursor-pointer"
+                                onFocus={(e) => e.target.showPicker?.()}
+                              />
+                              <button
+                                type="button"
+                                className={`font-bold px-3 py-1 rounded-xl text-xs transition-colors duration-200 cursor-pointer ${
+                                  todo.dueDate
+                                    ? 'btn-primary'
+                                    : 'text-date hover:bg-green-50 border border-gray-200'
+                                }`}
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  const input = e.currentTarget.previousElementSibling as HTMLInputElement;
+                                  input?.showPicker?.() || input?.focus();
+                                }}
+                              >
+                                {todo.dueDate
+                                  ? `${t('todos.due')}: ${formatDate(todo.dueDate, { year: 'numeric', month: 'short', day: 'numeric' })}`
+                                  : '마감일 지정'}
+                              </button>
+                            </div>
                           )}
                           <button
                             onClick={() => handleSetPriority(todo.id, todo.priority)}
