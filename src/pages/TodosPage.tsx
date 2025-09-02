@@ -287,26 +287,28 @@ export const TodosPage: React.FC = () => {
                       <div className="flex flex-col space-y-2 mt-3">
                         <div className="flex items-center justify-between">
                           {!todo.isCompleted && (
-                            <label className="relative inline-flex items-center cursor-pointer">
+                            <div className="relative">
                               <input
                                 type="date"
                                 value={todo.dueDate ? todo.dueDate.toISOString().split('T')[0] : ''}
                                 onChange={(e) => handleSetDueDate(todo.id, e)}
-                                className="absolute opacity-0 w-0 h-0"
-                                aria-label={todo.dueDate ? t('todos.due') : t('todos.add_due')}
-                              />
-                              <span
-                                className={`font-bold px-3 py-1 rounded-xl text-xs flex items-center transition-colors duration-200 cursor-pointer ${
+                                className={`font-bold px-3 py-1 rounded-xl text-xs transition-colors duration-200 cursor-pointer border-none outline-none bg-transparent ${
                                   todo.dueDate
                                     ? 'btn-primary'
                                     : 'text-date hover:bg-green-50'
                                 }`}
-                              >
-                                {todo.dueDate
-                                  ? `${t('todos.due')}: ${formatDate(todo.dueDate, { year: 'numeric', month: 'short', day: 'numeric' })}`
-                                  : t('todos.add_due')}
-                              </span>
-                            </label>
+                                style={{
+                                  colorScheme: 'light',
+                                  minWidth: todo.dueDate ? 'auto' : '120px'
+                                }}
+                                aria-label={todo.dueDate ? t('todos.due') : t('todos.add_due')}
+                              />
+                              {!todo.dueDate && (
+                                <span className="absolute inset-0 flex items-center px-3 pointer-events-none text-xs text-date">
+                                  {t('todos.add_due')}
+                                </span>
+                              )}
+                            </div>
                           )}
                           <button
                             onClick={() => handleSetPriority(todo.id, todo.priority)}
