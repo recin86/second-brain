@@ -287,33 +287,35 @@ export const TodosPage: React.FC = () => {
                       <div className="flex flex-col space-y-2 mt-3">
                         <div className="flex items-center justify-between">
                           {!todo.isCompleted && (
-                            <div className="relative">
+                            <div 
+                              className={`relative inline-block font-bold px-3 py-1 rounded-xl text-xs transition-colors duration-200 cursor-pointer ${
+                                todo.dueDate
+                                  ? 'btn-primary text-white'
+                                  : 'text-date hover:bg-green-50 border border-gray-200'
+                              }`}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                const input = e.currentTarget.querySelector('input[type="date"]') as HTMLInputElement;
+                                if (input?.showPicker) {
+                                  input.showPicker();
+                                } else {
+                                  input?.focus();
+                                  input?.click();
+                                }
+                              }}
+                            >
                               <input
                                 type="date"
                                 value={todo.dueDate ? todo.dueDate.toISOString().split('T')[0] : ''}
                                 onChange={(e) => handleSetDueDate(todo.id, e)}
-                                className={`w-full font-bold px-3 py-1 rounded-xl text-xs transition-colors duration-200 cursor-pointer appearance-none ${
-                                  todo.dueDate
-                                    ? 'btn-primary text-white'
-                                    : 'text-date hover:bg-green-50 border border-gray-200 bg-white'
-                                }`}
-                                style={{
-                                  colorScheme: 'light',
-                                  backgroundImage: 'none',
-                                  WebkitAppearance: 'none',
-                                  MozAppearance: 'textfield'
-                                }}
+                                className="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
+                                tabIndex={-1}
                               />
-                              <div className="absolute inset-0 flex items-center px-3 pointer-events-none">
-                                <span className="flex items-center gap-2">
-                                  <span>📅</span>
-                                  <span>
-                                    {todo.dueDate
-                                      ? `${t('todos.due')}: ${formatDate(todo.dueDate, { year: 'numeric', month: 'short', day: 'numeric' })}`
-                                      : '마감일 지정'}
-                                  </span>
-                                </span>
-                              </div>
+                              <span className="flex items-center gap-2 relative z-10">
+                                📅 {todo.dueDate
+                                  ? `${t('todos.due')}: ${formatDate(todo.dueDate, { year: 'numeric', month: 'short', day: 'numeric' })}`
+                                  : '마감일 지정'}
+                              </span>
                             </div>
                           )}
                           <button
