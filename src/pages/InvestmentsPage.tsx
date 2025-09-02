@@ -187,7 +187,23 @@ export const InvestmentsPage: React.FC = () => {
                   {...longPress.handlers}
                 >
                   <div className="flex flex-col">
-                    <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-center justify-between mb-4">
+                      <button
+                        onClick={() => {
+                          setSelectedItemId(investment.id);
+                          setCategoryModalOpen(true);
+                        }}
+                        className="badge hover:bg-blue-100 hover:border-blue-300 hover:text-blue-700 transition-colors cursor-pointer"
+                        title="카테고리 변경"
+                      >
+                        💰 투자
+                      </button>
+                      <div className="badge">
+                        {formatDate(investment.createdAt)}
+                      </div>
+                    </div>
+
+                    <div className="flex items-start justify-between">
                       <div className="flex-1 pr-8">
                         <p className="text-base leading-relaxed font-medium text-primary whitespace-pre-line">
                           {displayContent}
@@ -209,16 +225,6 @@ export const InvestmentsPage: React.FC = () => {
                       >
                         🗑️
                       </button>
-                    </div>
-                    
-                    <div className="flex items-center mb-3">
-                      <span className="px-2 py-1 rounded-lg text-xs font-semibold bg-green-100 text-green-800">
-                        💰 {t('type.investment')}
-                      </span>
-                    </div>
-                    
-                    <div className="badge ml-auto">
-                      {formatDate(investment.createdAt)}
                     </div>
                   </div>
 

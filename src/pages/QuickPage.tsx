@@ -6,6 +6,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { isTextLong, getPreviewText } from '../utils/textUtils';
 import { formatTime } from '../utils/dateUtils';
 import { useCardExpansion } from '../hooks/useCardExpansion';
+import { CategoryChangeModal } from '../components/ui/CategoryChangeModal';
 import { APP_CONSTANTS, TYPE_ICONS, UI_CONSTANTS } from '../constants';
 
 type RecentEntry = (Thought | Todo | RadiologyNote | Investment) & {
@@ -20,6 +21,9 @@ export const QuickPage: React.FC = () => {
   const [todos, setTodos] = useState<Todo[]>([]);
   const [radiologyNotes, setRadiologyNotes] = useState<RadiologyNote[]>([]);
   const [investments, setInvestments] = useState<Investment[]>([]);
+  const [categoryModalOpen, setCategoryModalOpen] = useState(false);
+  const [selectedItemId, setSelectedItemId] = useState<string>('');
+  const [selectedItemType, setSelectedItemType] = useState<'thought' | 'todo' | 'radiology' | 'investment'>('thought');
 
   useEffect(() => {
     const unsubThoughts = dataService.subscribeToThoughts(setThoughts);
@@ -76,6 +80,47 @@ export const QuickPage: React.FC = () => {
     }
   };
 
+  const handleCategoryChange = async (newCategory: string) => {
+    if (!selectedItemId) return;
+    
+    try {
+      switch (newCategory) {
+        case 'thought':
+          if (selectedItemType !== 'thought') {
+            await dataService.convertToThought(selectedItemId, selectedItemType as 'todo' | 'investment' | 'radiology');
+          }
+          break;
+        case 'todo':
+          if (selectedItemType !== 'todo') {
+            await dataService.convertToTodo(selectedItemId, selectedItemType as 'thought' | 'investment' | 'radiology');
+          }
+          break;
+        case 'investment':
+          if (selectedItemType !== 'investment') {
+            await dataService.convertToInvestment(selectedItemId, selectedItemType as 'thought' | 'todo' | 'radiology');
+          }
+          break;
+        case 'radiology':
+          if (selectedItemType !== 'radiology') {
+            await dataService.convertToRadiology(selectedItemId, selectedItemType as 'thought' | 'todo' | 'investment');
+          }
+          break;
+      }
+      
+      setCategoryModalOpen(false);
+      setSelectedItemId('');
+      setSelectedItemType('thought');
+    } catch (error) {
+      console.error('Failed to convert category:', error);
+    }
+  };
+
+  const handleCategoryButtonClick = (entry: RecentEntry) => {
+    setSelectedItemId(entry.id);
+    setSelectedItemType(entry.entryType);
+    setCategoryModalOpen(true);
+  };
+
   return (
     <div className="max-w-7xl mx-auto px-0 sm:px-8 py-4 sm:py-8">
       <QuickInput />
@@ -106,9 +151,13 @@ export const QuickPage: React.FC = () => {
                 >
                   <div className="space-y-4">
                     <div className="flex items-start justify-between">
-                      <div className="badge">
+                      <button
+                        onClick={() => handleCategoryButtonClick(entry)}
+                        className="badge hover:bg-blue-100 hover:border-blue-300 hover:text-blue-700 transition-colors cursor-pointer"
+                        title="카테고리 변경"
+                      >
                         {getEntryIcon(entry)} {getEntryType(entry)}
-                      </div>
+                      </button>
                       <span className="badge">
                         {formatTime(entry.createdAt)}
                       </span>
@@ -135,6 +184,17 @@ export const QuickPage: React.FC = () => {
           </div>
         </div>
       )}
+
+      <CategoryChangeModal
+        isOpen={categoryModalOpen}
+        currentCategory={selectedItemType}
+        onCategorySelect={handleCategoryChange}
+        onClose={() => {
+          setCategoryModalOpen(false);
+          setSelectedItemId('');
+          setSelectedItemType('thought');
+        }}
+      />
     </div>
   );
 };

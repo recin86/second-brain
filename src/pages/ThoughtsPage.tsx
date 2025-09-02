@@ -190,7 +190,23 @@ export const ThoughtsPage: React.FC = () => {
                             {...longPress.handlers}
                           >
                             <div className="flex flex-col">
-                              <div className="flex items-start justify-between mb-4">
+                              <div className="flex items-center justify-between mb-4">
+                                <button
+                                  onClick={() => {
+                                    setSelectedItemId(thought.id);
+                                    setCategoryModalOpen(true);
+                                  }}
+                                  className="badge hover:bg-blue-100 hover:border-blue-300 hover:text-blue-700 transition-colors cursor-pointer"
+                                  title="카테고리 변경"
+                                >
+                                  💭 생각
+                                </button>
+                                <div className="badge">
+                                  {formatDate(thought.createdAt)}
+                                </div>
+                              </div>
+                              
+                              <div className="flex items-start justify-between">
                                 <div className="pr-8 flex-1">
                                   <p className="text-base leading-relaxed font-medium text-primary whitespace-pre-line">
                                     {displayContent}
@@ -212,9 +228,6 @@ export const ThoughtsPage: React.FC = () => {
                                 >
                                   🗑️
                                 </button>
-                              </div>
-                              <div className="badge ml-auto">
-                                {formatDate(thought.createdAt)}
                               </div>
                             </div>
 

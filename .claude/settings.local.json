@@ -6,7 +6,8 @@
       "Bash(npm install)",
       "Bash(firebase projects:list:*)",
       "Bash(npm install:*)",
-      "Bash(firebase login:*)"
+      "Bash(firebase login:*)",
+      "Bash(npm run lint)"
     ],
     "deny": [],
     "ask": []

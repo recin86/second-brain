@@ -14,7 +14,7 @@ export const useLongPress = (
   const { threshold = 500, onStart, onFinish, onCancel } = options;
   
   const [isPressed, setIsPressed] = useState(false);
-  const timeoutRef = useRef<NodeJS.Timeout>();
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const startPosRef = useRef<{ x: number; y: number } | null>(null);
 
   const start = useCallback((clientX: number, clientY: number) => {
@@ -32,7 +32,7 @@ export const useLongPress = (
   const clear = useCallback((shouldCancel = true) => {
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
-      timeoutRef.current = undefined;
+      timeoutRef.current = null;
     }
     
     if (isPressed && shouldCancel) {

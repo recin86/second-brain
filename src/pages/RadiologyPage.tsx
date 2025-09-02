@@ -27,10 +27,9 @@ export const RadiologyPage: React.FC = () => {
   const subtags = useMemo(() => {
     const allTags = new Set<string>();
     notes.forEach(note => {
-      const radIndex = note.tags.findIndex(tag => tag === '#rad');
-      if (radIndex !== -1) {
-        note.tags.slice(radIndex + 1).forEach(tag => allTags.add(tag));
-      }
+      note.tags
+        .filter(tag => tag !== '#rad')
+        .forEach(tag => allTags.add(tag));
     });
     return Array.from(allTags).sort();
   }, [notes]);
@@ -184,6 +183,22 @@ export const RadiologyPage: React.FC = () => {
                   {...longPress.handlers}
                 >
                   <div className="flex flex-col">
+                    <div className="flex items-center justify-between mb-4">
+                      <button
+                        onClick={() => {
+                          setSelectedItemId(note.id);
+                          setCategoryModalOpen(true);
+                        }}
+                        className="badge hover:bg-blue-100 hover:border-blue-300 hover:text-blue-700 transition-colors cursor-pointer"
+                        title="카테고리 변경"
+                      >
+                        🔬 영상의학
+                      </button>
+                      <div className="badge">
+                        {formatDate(note.createdAt)}
+                      </div>
+                    </div>
+
                     <div className="flex items-start justify-between mb-4">
                       <div className="flex-1 pr-8">
                         <p className="text-base leading-relaxed font-medium text-primary whitespace-pre-line">
@@ -208,24 +223,20 @@ export const RadiologyPage: React.FC = () => {
                       </button>
                     </div>
                   
-                  <div className="flex flex-wrap gap-2 mb-3">
-                    {note.tags.map((tag, index) => (
-                      <span
-                        key={index}
-                        className={`px-2 py-1 rounded-lg text-xs font-semibold ${
-                          tag === '#rad' 
-                            ? 'bg-green-100 text-green-800' 
-                            : 'badge'
-                        }`}
-                      >
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-                  
-                    <div className="badge ml-auto">
-                      {formatDate(note.createdAt)}
-                    </div>
+                    {note.tags.filter(tag => tag !== '#rad').length > 0 && (
+                      <div className="flex flex-wrap gap-2">
+                        {note.tags
+                          .filter(tag => tag !== '#rad')
+                          .map((tag, index) => (
+                            <span
+                              key={index}
+                              className="badge"
+                            >
+                              {tag}
+                            </span>
+                          ))}
+                      </div>
+                    )}
                   </div>
 
                   {/* Swipe indicators */}

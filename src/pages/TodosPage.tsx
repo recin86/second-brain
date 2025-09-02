@@ -224,31 +224,47 @@ export const TodosPage: React.FC = () => {
                   🗑️
                 </button>
 
-                <div className="flex items-start space-x-4 h-full">
-                  <button
-                    onClick={() => handleToggleComplete(todo.id)}
-                    className={`flex-shrink-0 w-7 h-7 rounded-2xl border-2 flex items-center justify-center transition-all mt-1 ${
-                      todo.isCompleted
-                        ? 'shadow-md'
-                        : 'hover:bg-opacity-10'
-                    }`}
-                    style={todo.isCompleted
-                      ? {backgroundColor: '#8ABF92', borderColor: '#8ABF92', color: '#038C3E'}
-                      : {borderColor: '#8ABF92', backgroundColor: 'transparent', color: '#8ABF92'}}
-                  >
-                    {todo.isCompleted && (
-                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                        <path
-                          fillRule="evenodd"
-                          d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                          clipRule="evenodd"
-                        />
-                      </svg>
-                    )}
-                  </button>
-                  
-                  <div className="flex-1 min-w-0 flex flex-col justify-between h-full">
-                    <div>
+                <div className="flex flex-col space-y-4">
+                  <div className="flex items-center justify-between">
+                    <button
+                      onClick={() => {
+                        setSelectedItemId(todo.id);
+                        setCategoryModalOpen(true);
+                      }}
+                      className="badge hover:bg-blue-100 hover:border-blue-300 hover:text-blue-700 transition-colors cursor-pointer"
+                      title="카테고리 변경"
+                    >
+                      ✅ 할 일
+                    </button>
+                    <div className="badge">
+                      {formatDate(todo.createdAt)}
+                    </div>
+                  </div>
+
+                  <div className="flex items-start space-x-4">
+                    <button
+                      onClick={() => handleToggleComplete(todo.id)}
+                      className={`flex-shrink-0 w-7 h-7 rounded-2xl border-2 flex items-center justify-center transition-all mt-1 ${
+                        todo.isCompleted
+                          ? 'shadow-md'
+                          : 'hover:bg-opacity-10'
+                      }`}
+                      style={todo.isCompleted
+                        ? {backgroundColor: '#8ABF92', borderColor: '#8ABF92', color: '#038C3E'}
+                        : {borderColor: '#8ABF92', backgroundColor: 'transparent', color: '#8ABF92'}}
+                    >
+                      {todo.isCompleted && (
+                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                          <path
+                            fillRule="evenodd"
+                            d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                            clipRule="evenodd"
+                          />
+                        </svg>
+                      )}
+                    </button>
+                    
+                    <div className="flex-1 min-w-0">
                       <p
                         className={`text-base font-semibold leading-relaxed mb-3 pr-8 whitespace-pre-line ${
                           todo.isCompleted
@@ -267,64 +283,60 @@ export const TodosPage: React.FC = () => {
                           {cardExpanded ? '접기' : '...더보기'}
                         </button>
                       )}
-                    </div>
-
-                  <div className="flex flex-col mt-auto pt-2">
-                    <div className="flex items-center justify-between">
-                      {!todo.isCompleted && (
-                        <label className="relative inline-flex items-center cursor-pointer ml-auto">
-                          <input
-                            type="date"
-                            value={todo.dueDate ? todo.dueDate.toISOString().split('T')[0] : ''}
-                            onChange={(e) => handleSetDueDate(todo.id, e)}
-                            className="absolute opacity-0 w-0 h-0"
-                            aria-label={todo.dueDate ? t('todos.due') : t('todos.add_due')}
-                          />
-                          <span
-                            className={`font-bold px-3 py-1 rounded-xl text-xs flex items-center transition-colors duration-200 cursor-pointer ${
-                              todo.dueDate
-                                ? 'btn-primary'
-                                : 'text-date hover:bg-green-50'
-                            }`}
+                      
+                      <div className="flex flex-col space-y-2 mt-3">
+                        <div className="flex items-center justify-between">
+                          {!todo.isCompleted && (
+                            <label className="relative inline-flex items-center cursor-pointer">
+                              <input
+                                type="date"
+                                value={todo.dueDate ? todo.dueDate.toISOString().split('T')[0] : ''}
+                                onChange={(e) => handleSetDueDate(todo.id, e)}
+                                className="absolute opacity-0 w-0 h-0"
+                                aria-label={todo.dueDate ? t('todos.due') : t('todos.add_due')}
+                              />
+                              <span
+                                className={`font-bold px-3 py-1 rounded-xl text-xs flex items-center transition-colors duration-200 cursor-pointer ${
+                                  todo.dueDate
+                                    ? 'btn-primary'
+                                    : 'text-date hover:bg-green-50'
+                                }`}
+                              >
+                                {todo.dueDate
+                                  ? `${t('todos.due')}: ${formatDate(todo.dueDate, { year: 'numeric', month: 'short', day: 'numeric' })}`
+                                  : t('todos.add_due')}
+                              </span>
+                            </label>
+                          )}
+                          <button
+                            onClick={() => handleSetPriority(todo.id, todo.priority)}
+                            className={`btn px-3 py-1 text-xs ${getPriorityColor(todo.priority)}`}
+                            aria-label="Priority change"
                           >
-                            {todo.dueDate
-                              ? `${t('todos.due')}: ${formatDate(todo.dueDate, { year: 'numeric', month: 'short', day: 'numeric' })}`
-                              : t('todos.add_due')}
-                          </span>
-                        </label>
-                      )}
-                    </div>
-                    <div className="flex items-center justify-between mt-2">
-                      <button
-                        onClick={() => handleSetPriority(todo.id, todo.priority)}
-                        className={`btn px-3 py-1 text-xs ${getPriorityColor(todo.priority)}`}
-                        aria-label="Priority change"
-                      >
-                        {getPriorityLabel(todo.priority)}
-                      </button>
-                      <span className="badge">
-                        {formatDate(todo.createdAt)}
-                      </span>
+                            {getPriorityLabel(todo.priority)}
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
-
-                {/* Swipe indicators */}
-                {swipeGesture.isDragging && (
-                  <>
-                    <div className={`absolute left-4 top-1/2 transform -translate-y-1/2 text-2xl transition-opacity ${
-                      swipeGesture.swipeDirection === 'right' ? 'opacity-100' : 'opacity-30'
-                    }`}>
-                      🔄
-                    </div>
-                    <div className={`absolute right-4 top-1/2 transform -translate-y-1/2 text-2xl transition-opacity ${
-                      swipeGesture.swipeDirection === 'left' ? 'opacity-100' : 'opacity-30'
-                    }`}>
-                      🗑️
-                    </div>
-                  </>
-                )}
-              </div>
+              
+              {/* Swipe indicators */}
+              {swipeGesture.isDragging && (
+                <>
+                  <div className={`absolute left-4 top-1/2 transform -translate-y-1/2 text-2xl transition-opacity ${
+                    swipeGesture.swipeDirection === 'right' ? 'opacity-100' : 'opacity-30'
+                  }`}>
+                    🔄
+                  </div>
+                  <div className={`absolute right-4 top-1/2 transform -translate-y-1/2 text-2xl transition-opacity ${
+                    swipeGesture.swipeDirection === 'left' ? 'opacity-100' : 'opacity-30'
+                  }`}>
+                    🗑️
+                  </div>
+                </>
+              )}
+            </div>
             );
           };
           
