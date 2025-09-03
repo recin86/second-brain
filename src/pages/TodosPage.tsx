@@ -287,23 +287,26 @@ export const TodosPage: React.FC = () => {
                       <div className="flex flex-col space-y-2 mt-3">
                         <div className="flex items-center justify-between">
                           {!todo.isCompleted && (
-                            <input
-                              type="date"
-                              value={todo.dueDate ? todo.dueDate.toISOString().split('T')[0] : ''}
-                              onChange={(e) => handleSetDueDate(todo.id, e)}
-                              className={`font-bold px-3 py-1 rounded-xl text-xs transition-colors duration-200 cursor-pointer border ${
-                                todo.dueDate
-                                  ? 'btn-primary text-white bg-blue-600 border-blue-600'
-                                  : 'text-gray-600 hover:bg-green-50 border-gray-200 bg-white'
-                              }`}
-                              style={{
-                                minWidth: '120px',
-                                textAlign: 'center'
-                              }}
-                              title={todo.dueDate 
-                                ? `📅 ${t('todos.due')}: ${formatDate(todo.dueDate, { year: 'numeric', month: 'short', day: 'numeric' })}`
-                                : '📅 마감일 지정'}
-                            />
+                            <div className="relative inline-block">
+                              <input
+                                type="date"
+                                value={todo.dueDate ? todo.dueDate.toISOString().split('T')[0] : ''}
+                                onChange={(e) => handleSetDueDate(todo.id, e)}
+                                className="absolute top-0 left-0 w-full h-full opacity-0 z-10 cursor-pointer"
+                                style={{ margin: 0, padding: 0 }}
+                              />
+                              <div
+                                className={`font-bold px-3 py-1 rounded-xl text-xs transition-colors duration-200 border pointer-events-none ${
+                                  todo.dueDate
+                                    ? 'btn-primary text-white bg-blue-600 border-blue-600'
+                                    : 'text-gray-600 hover:bg-green-50 border-gray-200 bg-white'
+                                }`}
+                              >
+                                📅 {todo.dueDate
+                                  ? `${t('todos.due')}: ${formatDate(todo.dueDate, { year: 'numeric', month: 'short', day: 'numeric' })}`
+                                  : '마감일 지정'}
+                              </div>
+                            </div>
                           )}
                           <button
                             onClick={() => handleSetPriority(todo.id, todo.priority)}
