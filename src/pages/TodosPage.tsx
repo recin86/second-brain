@@ -52,7 +52,18 @@ export const TodosPage: React.FC = () => {
   const handleDateClick = (todoId: string) => {
     const input = document.getElementById(`date-input-${todoId}`) as HTMLInputElement;
     if (input) {
-      input.showPicker();
+      // 모바일에서도 작동하도록 focus와 click 이벤트 사용
+      input.focus();
+      input.click();
+      
+      // showPicker()가 지원되는 경우에만 사용
+      if (typeof input.showPicker === 'function') {
+        try {
+          input.showPicker();
+        } catch (error) {
+          // showPicker() 실패 시 무시
+        }
+      }
     }
   };
 
