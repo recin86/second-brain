@@ -57,6 +57,11 @@ export class FirestoreService {
     await setDoc(docRef, { ...thoughtData, createdAt: serverTimestamp() });
   }
 
+  async updateThought(thoughtId: string, updates: Partial<Thought>): Promise<void> {
+    const docRef = doc(db, getUserCollectionPath(this.userId, 'thoughts'), thoughtId);
+    await updateDoc(docRef, updates);
+  }
+
   async deleteThought(thoughtId: string): Promise<void> {
     await deleteDoc(doc(db, getUserCollectionPath(this.userId, 'thoughts'), thoughtId));
   }
@@ -140,6 +145,11 @@ export class FirestoreService {
     await setDoc(docRef, { ...noteData, createdAt: serverTimestamp() });
   }
 
+  async updateRadiologyNote(noteId: string, updates: Partial<RadiologyNote>): Promise<void> {
+    const docRef = doc(db, getUserCollectionPath(this.userId, 'radiology'), noteId);
+    await updateDoc(docRef, updates);
+  }
+
   async deleteRadiologyNote(noteId: string): Promise<void> {
     await deleteDoc(doc(db, getUserCollectionPath(this.userId, 'radiology'), noteId));
   }
@@ -159,6 +169,11 @@ export class FirestoreService {
     const docRef = doc(db, getUserCollectionPath(this.userId, 'investments'), investment.id);
     const { id, ...investmentData } = investment;
     await setDoc(docRef, { ...investmentData, createdAt: serverTimestamp() });
+  }
+
+  async updateInvestment(id: string, updates: Partial<Investment>): Promise<void> {
+    const docRef = doc(db, getUserCollectionPath(this.userId, 'investments'), id);
+    await updateDoc(docRef, updates);
   }
 
   async deleteInvestment(id: string): Promise<void> {

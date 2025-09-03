@@ -9,6 +9,8 @@ import { useCardExpansion } from '../hooks/useCardExpansion';
 import { useSwipeGesture } from '../hooks/useSwipeGesture';
 import { useLongPress } from '../hooks/useLongPress';
 import { CategoryChangeModal } from '../components/ui/CategoryChangeModal';
+import { EditModal } from '../components/ui/EditModal';
+import { smartEditItem } from '../utils/smartEdit';
 
 export const ThoughtsPage: React.FC = () => {
   const { t } = useLanguage();
@@ -18,6 +20,8 @@ export const ThoughtsPage: React.FC = () => {
   const [expandedMonths, setExpandedMonths] = useState<Record<string, boolean>>({});
   const [categoryModalOpen, setCategoryModalOpen] = useState(false);
   const [selectedItemId, setSelectedItemId] = useState<string>('');
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [editingThought, setEditingThought] = useState<Thought | null>(null);
   const { toggleCardExpansion, isExpanded } = useCardExpansion();
 
   useEffect(() => {
@@ -52,6 +56,36 @@ export const ThoughtsPage: React.FC = () => {
       showUndo('생각이 삭제되었습니다', undoFunction);
     } catch (error) {
       console.error('Failed to delete thought:', error);
+    }
+  };
+
+  const handleEditThought = (thought: Thought) => {
+    setEditingThought(thought);
+    setEditModalOpen(true);
+  };
+
+  const handleSaveEdit = async (content: string) => {
+    if (!editingThought) return;
+    
+    try {
+      const result = await smartEditItem(editingThought, 'thought', content);
+      setEditModalOpen(false);
+      setEditingThought(null);
+      
+      if (result.converted) {
+        showUndo(`생각이 ${getTypeName(result.newType!)}로 변환되었습니다`, () => {});
+      }
+    } catch (error) {
+      console.error('Failed to update thought:', error);
+    }
+  };
+
+  const getTypeName = (type: string) => {
+    switch (type) {
+      case 'todo': return '할 일';
+      case 'radiology': return '영상의학';
+      case 'investment': return '투자';
+      default: return type;
     }
   };
 
@@ -201,8 +235,22 @@ export const ThoughtsPage: React.FC = () => {
                                 >
                                   💭 생각
                                 </button>
-                                <div className="badge">
-                                  {formatDate(thought.createdAt)}
+                                <div className="flex items-center space-x-2">
+                                  <button
+                                    onClick={() => handleEditThought(thought)}
+                                    className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-200 text-muted hover:text-blue-600 p-1"
+                                    aria-label="Edit thought"
+                                    title="수정"
+                                  >
+                                    ✏️
+                                  </button>
+                                  <button
+                                    onClick={() => handleDeleteThought(thought.id)}
+                                    className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-200 text-muted hover:text-red-600 p-1"
+                                    aria-label="Delete thought"
+                                  >
+                                    🗑️
+                                  </button>
                                 </div>
                               </div>
                               
@@ -221,13 +269,13 @@ export const ThoughtsPage: React.FC = () => {
                                     </button>
                                   )}
                                 </div>
-                                <button
-                                  onClick={() => handleDeleteThought(thought.id)}
-                                  className="absolute top-4 right-4 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-200 text-muted hover:text-red-600 p-1"
-                                  aria-label="Delete thought"
-                                >
-                                  🗑️
-                                </button>
+                              </div>
+                              
+                              {/* Date at bottom right */}
+                              <div className="flex justify-end mt-4">
+                                <div className="text-xs text-gray-500">
+                                  {formatDate(thought.createdAt)}
+                                </div>
                               </div>
                             </div>
 
@@ -266,6 +314,17 @@ export const ThoughtsPage: React.FC = () => {
         onClose={() => {
           setCategoryModalOpen(false);
           setSelectedItemId('');
+        }}
+      />
+      
+      <EditModal
+        isOpen={editModalOpen}
+        title="생각 수정"
+        initialContent={editingThought?.content || ''}
+        onSave={handleSaveEdit}
+        onClose={() => {
+          setEditModalOpen(false);
+          setEditingThought(null);
         }}
       />
     </div>

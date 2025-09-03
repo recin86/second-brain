@@ -9,6 +9,8 @@ import { useCardExpansion } from '../hooks/useCardExpansion';
 import { useSwipeGesture } from '../hooks/useSwipeGesture';
 import { useLongPress } from '../hooks/useLongPress';
 import { CategoryChangeModal } from '../components/ui/CategoryChangeModal';
+import { EditModal } from '../components/ui/EditModal';
+import { smartEditItem } from '../utils/smartEdit';
 
 export const InvestmentsPage: React.FC = () => {
   const { t } = useLanguage();
@@ -18,6 +20,8 @@ export const InvestmentsPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [categoryModalOpen, setCategoryModalOpen] = useState(false);
   const [selectedItemId, setSelectedItemId] = useState<string>('');
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [editingInvestment, setEditingInvestment] = useState<Investment | null>(null);
   const { toggleCardExpansion, isExpanded } = useCardExpansion();
 
   useEffect(() => {
@@ -30,6 +34,36 @@ export const InvestmentsPage: React.FC = () => {
     return () => unsubscribe();
   }, []);
 
+
+  const handleEditInvestment = (investment: Investment) => {
+    setEditingInvestment(investment);
+    setEditModalOpen(true);
+  };
+
+  const handleSaveEdit = async (content: string) => {
+    if (!editingInvestment) return;
+    
+    try {
+      const result = await smartEditItem(editingInvestment, 'investment', content);
+      setEditModalOpen(false);
+      setEditingInvestment(null);
+      
+      if (result.converted) {
+        showUndo(`투자 기록이 ${getTypeName(result.newType!)}로 변환되었습니다`, () => {});
+      }
+    } catch (error) {
+      console.error('Failed to update investment:', error);
+    }
+  };
+
+  const getTypeName = (type: string) => {
+    switch (type) {
+      case 'thought': return '생각';
+      case 'todo': return '할 일';
+      case 'radiology': return '영상의학';
+      default: return type;
+    }
+  };
 
   const handleDeleteInvestment = async (id: string, skipConfirm = false) => {
     if (!skipConfirm && !window.confirm(t('investments.delete_confirm'))) {
@@ -190,8 +224,22 @@ export const InvestmentsPage: React.FC = () => {
                       >
                         💰 투자
                       </button>
-                      <div className="badge">
-                        {formatDate(investment.createdAt)}
+                      <div className="flex items-center space-x-2">
+                        <button
+                          onClick={() => handleEditInvestment(investment)}
+                          className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-200 text-muted hover:text-blue-600 p-1"
+                          aria-label="Edit investment"
+                          title="수정"
+                        >
+                          ✏️
+                        </button>
+                        <button
+                          onClick={() => handleDeleteInvestment(investment.id)}
+                          className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-200 text-muted hover:text-red-600 p-1"
+                          aria-label="Delete investment"
+                        >
+                          🗑️
+                        </button>
                       </div>
                     </div>
 
@@ -210,13 +258,13 @@ export const InvestmentsPage: React.FC = () => {
                           </button>
                         )}
                       </div>
-                      <button
-                        onClick={() => handleDeleteInvestment(investment.id)}
-                        className="absolute top-4 right-4 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-200 text-muted hover:text-red-600 p-1 z-20"
-                        aria-label="Delete investment"
-                      >
-                        🗑️
-                      </button>
+                    </div>
+                    
+                    {/* Date at bottom right */}
+                    <div className="flex justify-end mt-4">
+                      <div className="text-xs text-gray-500">
+                        {formatDate(investment.createdAt)}
+                      </div>
                     </div>
                   </div>
 
@@ -251,6 +299,17 @@ export const InvestmentsPage: React.FC = () => {
         onClose={() => {
           setCategoryModalOpen(false);
           setSelectedItemId('');
+        }}
+      />
+      
+      <EditModal
+        isOpen={editModalOpen}
+        title="투자 기록 수정"
+        initialContent={editingInvestment?.content || ''}
+        onSave={handleSaveEdit}
+        onClose={() => {
+          setEditModalOpen(false);
+          setEditingInvestment(null);
         }}
       />
     </div>

@@ -86,6 +86,15 @@ export const storage = {
     }
   },
 
+  updateThought(id: string, updates: Partial<Thought>): void {
+    const thoughts = this.getThoughts();
+    const index = thoughts.findIndex(t => t.id === id);
+    if (index !== -1) {
+      thoughts[index] = { ...thoughts[index], ...updates };
+      this.saveThoughts(thoughts);
+    }
+  },
+
   deleteTodo(id: string): void {
     let todos = this.getTodos();
     todos = todos.filter(todo => todo.id !== id);
@@ -108,6 +117,15 @@ export const storage = {
     const notes = this.getRadiologyNotes();
     notes.unshift(note);
     this.saveRadiologyNotes(notes);
+  },
+
+  updateRadiologyNote(id: string, updates: Partial<RadiologyNote>): void {
+    const notes = this.getRadiologyNotes();
+    const index = notes.findIndex(n => n.id === id);
+    if (index !== -1) {
+      notes[index] = { ...notes[index], ...updates };
+      this.saveRadiologyNotes(notes);
+    }
   },
 
   deleteRadiologyNote(id: string): void {
@@ -144,6 +162,15 @@ export const storage = {
     const investments = this.getInvestments();
     investments.unshift(investment);
     this.saveInvestments(investments);
+  },
+
+  updateInvestment(id: string, updates: Partial<Investment>): void {
+    const investments = this.getInvestments();
+    const index = investments.findIndex(i => i.id === id);
+    if (index !== -1) {
+      investments[index] = { ...investments[index], ...updates };
+      this.saveInvestments(investments);
+    }
   },
 
   deleteInvestment(id: string): void {

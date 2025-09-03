@@ -9,6 +9,8 @@ import { useCardExpansion } from '../hooks/useCardExpansion';
 import { useSwipeGesture } from '../hooks/useSwipeGesture';
 import { useLongPress } from '../hooks/useLongPress';
 import { CategoryChangeModal } from '../components/ui/CategoryChangeModal';
+import { EditModal } from '../components/ui/EditModal';
+import { smartEditItem } from '../utils/smartEdit';
 
 export const RadiologyPage: React.FC = () => {
   const { t } = useLanguage();
@@ -17,6 +19,8 @@ export const RadiologyPage: React.FC = () => {
   const [selectedTag, setSelectedTag] = useState<string>('all');
   const [categoryModalOpen, setCategoryModalOpen] = useState(false);
   const [selectedItemId, setSelectedItemId] = useState<string>('');
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [editingNote, setEditingNote] = useState<RadiologyNote | null>(null);
   const { toggleCardExpansion, isExpanded } = useCardExpansion();
 
   useEffect(() => {
@@ -43,6 +47,36 @@ export const RadiologyPage: React.FC = () => {
     return notes.filter(note => note.tags.includes(tag)).length;
   };
 
+
+  const handleEditNote = (note: RadiologyNote) => {
+    setEditingNote(note);
+    setEditModalOpen(true);
+  };
+
+  const handleSaveEdit = async (content: string) => {
+    if (!editingNote) return;
+    
+    try {
+      const result = await smartEditItem(editingNote, 'radiology', content);
+      setEditModalOpen(false);
+      setEditingNote(null);
+      
+      if (result.converted) {
+        showUndo(`영상의학 노트가 ${getTypeName(result.newType!)}로 변환되었습니다`, () => {});
+      }
+    } catch (error) {
+      console.error('Failed to update radiology note:', error);
+    }
+  };
+
+  const getTypeName = (type: string) => {
+    switch (type) {
+      case 'thought': return '생각';
+      case 'todo': return '할 일';
+      case 'investment': return '투자';
+      default: return type;
+    }
+  };
 
   const handleDelete = async (id: string, skipConfirm = false) => {
     if (!skipConfirm && !window.confirm(t('radiology.delete_confirm'))) {
@@ -194,8 +228,22 @@ export const RadiologyPage: React.FC = () => {
                       >
                         🔬 영상의학
                       </button>
-                      <div className="badge">
-                        {formatDate(note.createdAt)}
+                      <div className="flex items-center space-x-2">
+                        <button
+                          onClick={() => handleEditNote(note)}
+                          className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-200 text-muted hover:text-blue-600 p-1"
+                          aria-label="Edit note"
+                          title="수정"
+                        >
+                          ✏️
+                        </button>
+                        <button
+                          onClick={() => handleDelete(note.id)}
+                          className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-200 text-muted hover:text-red-600 p-1"
+                          aria-label="Delete note"
+                        >
+                          🗑️
+                        </button>
                       </div>
                     </div>
 
@@ -214,13 +262,6 @@ export const RadiologyPage: React.FC = () => {
                           </button>
                         )}
                       </div>
-                      <button
-                        onClick={() => handleDelete(note.id)}
-                        className="absolute top-4 right-4 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-200 text-muted hover:text-red-600 p-1"
-                        aria-label="Delete note"
-                      >
-                        🗑️
-                      </button>
                     </div>
                   
                     {note.tags.filter(tag => tag !== '#rad').length > 0 && (
@@ -237,6 +278,13 @@ export const RadiologyPage: React.FC = () => {
                           ))}
                       </div>
                     )}
+                    
+                    {/* Date at bottom right */}
+                    <div className="flex justify-end mt-4">
+                      <div className="text-xs text-gray-500">
+                        {formatDate(note.createdAt)}
+                      </div>
+                    </div>
                   </div>
 
                   {/* Swipe indicators */}
@@ -270,6 +318,17 @@ export const RadiologyPage: React.FC = () => {
         onClose={() => {
           setCategoryModalOpen(false);
           setSelectedItemId('');
+        }}
+      />
+      
+      <EditModal
+        isOpen={editModalOpen}
+        title="영상의학 노트 수정"
+        initialContent={editingNote?.content || ''}
+        onSave={handleSaveEdit}
+        onClose={() => {
+          setEditModalOpen(false);
+          setEditingNote(null);
         }}
       />
     </div>

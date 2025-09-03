@@ -10,6 +10,8 @@ import { useCardExpansion } from '../hooks/useCardExpansion';
 import { useSwipeGesture } from '../hooks/useSwipeGesture';
 import { useLongPress } from '../hooks/useLongPress';
 import { CategoryChangeModal } from '../components/ui/CategoryChangeModal';
+import { EditModal } from '../components/ui/EditModal';
+import { smartEditItem } from '../utils/smartEdit';
 
 export const TodosPage: React.FC = () => {
   const { t } = useLanguage();
@@ -18,6 +20,8 @@ export const TodosPage: React.FC = () => {
   const [filter, setFilter] = useState<'all' | 'pending' | 'completed'>('all');
   const [categoryModalOpen, setCategoryModalOpen] = useState(false);
   const [selectedItemId, setSelectedItemId] = useState<string>('');
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [editingTodo, setEditingTodo] = useState<Todo | null>(null);
   const { toggleCardExpansion, isExpanded } = useCardExpansion();
 
   useEffect(() => {
@@ -45,11 +49,48 @@ export const TodosPage: React.FC = () => {
     debouncedUpdateTodoRef.current(todoId, { dueDate });
   };
 
+  const handleDateClick = (todoId: string) => {
+    const input = document.getElementById(`date-input-${todoId}`) as HTMLInputElement;
+    if (input) {
+      input.showPicker();
+    }
+  };
+
   const handleSetPriority = (todoId: string, currentPriority: Todo['priority']) => {
     const priorities: Todo['priority'][] = ['low', 'medium', 'high'];
     const currentIndex = priorities.indexOf(currentPriority);
     const nextIndex = (currentIndex + 1) % priorities.length;
     dataService.updateTodo(todoId, { priority: priorities[nextIndex] });
+  };
+
+  const handleEditTodo = (todo: Todo) => {
+    setEditingTodo(todo);
+    setEditModalOpen(true);
+  };
+
+  const handleSaveEdit = async (content: string) => {
+    if (!editingTodo) return;
+    
+    try {
+      const result = await smartEditItem(editingTodo, 'todo', content);
+      setEditModalOpen(false);
+      setEditingTodo(null);
+      
+      if (result.converted) {
+        showUndo(`할 일이 ${getTypeName(result.newType!)}로 변환되었습니다`, () => {});
+      }
+    } catch (error) {
+      console.error('Failed to update todo:', error);
+    }
+  };
+
+  const getTypeName = (type: string) => {
+    switch (type) {
+      case 'thought': return '생각';
+      case 'radiology': return '영상의학';
+      case 'investment': return '투자';
+      default: return type;
+    }
   };
 
   const handleDeleteTodo = async (id: string, skipConfirm = false) => {
@@ -216,13 +257,6 @@ export const TodosPage: React.FC = () => {
                   {...swipeGesture.swipeHandlers}
                   {...longPress.handlers}
                 >
-                <button
-                  onClick={() => handleDeleteTodo(todo.id)}
-                  className="text-muted hover:text-red-600 absolute top-4 right-4 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-200 z-10"
-                  aria-label="Delete todo"
-                >
-                  🗑️
-                </button>
 
                 <div className="flex flex-col space-y-4">
                   <div className="flex items-center justify-between">
@@ -236,8 +270,22 @@ export const TodosPage: React.FC = () => {
                     >
                       ✅ 할 일
                     </button>
-                    <div className="badge">
-                      {formatDate(todo.createdAt)}
+                    <div className="flex items-center space-x-2">
+                      <button
+                        onClick={() => handleEditTodo(todo)}
+                        className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-200 text-muted hover:text-blue-600 p-1"
+                        aria-label="Edit todo"
+                        title="수정"
+                      >
+                        ✏️
+                      </button>
+                      <button
+                        onClick={() => handleDeleteTodo(todo.id)}
+                        className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-200 text-muted hover:text-red-600 p-1"
+                        aria-label="Delete todo"
+                      >
+                        🗑️
+                      </button>
                     </div>
                   </div>
 
@@ -287,25 +335,26 @@ export const TodosPage: React.FC = () => {
                       <div className="flex flex-col space-y-2 mt-3">
                         <div className="flex items-center justify-between">
                           {!todo.isCompleted && (
-                            <div className="relative inline-block">
+                            <div className="relative">
                               <input
+                                id={`date-input-${todo.id}`}
                                 type="date"
                                 value={todo.dueDate ? todo.dueDate.toISOString().split('T')[0] : ''}
                                 onChange={(e) => handleSetDueDate(todo.id, e)}
-                                className="absolute top-0 left-0 w-full h-full opacity-0 z-10 cursor-pointer"
-                                style={{ margin: 0, padding: 0 }}
+                                className="sr-only"
                               />
-                              <div
-                                className={`font-bold px-3 py-1 rounded-xl text-xs transition-colors duration-200 border pointer-events-none ${
+                              <button
+                                onClick={() => handleDateClick(todo.id)}
+                                className={`font-bold px-3 py-1 rounded-xl text-xs transition-colors duration-200 border cursor-pointer hover:scale-105 transform ${
                                   todo.dueDate
                                     ? 'btn-primary text-white bg-blue-600 border-blue-600'
-                                    : 'text-gray-600 hover:bg-green-50 border-gray-200 bg-white'
+                                    : 'text-gray-600 hover:bg-green-50 border-gray-200 bg-white hover:border-green-300'
                                 }`}
                               >
                                 📅 {todo.dueDate
                                   ? `${t('todos.due')}: ${formatDate(todo.dueDate, { year: 'numeric', month: 'short', day: 'numeric' })}`
                                   : '마감일 지정'}
-                              </div>
+                              </button>
                             </div>
                           )}
                           <button
@@ -315,6 +364,13 @@ export const TodosPage: React.FC = () => {
                           >
                             {getPriorityLabel(todo.priority)}
                           </button>
+                        </div>
+                        
+                        {/* Date at bottom right */}
+                        <div className="flex justify-end mt-3">
+                          <div className="text-xs text-gray-500">
+                            {formatDate(todo.createdAt)}
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -352,6 +408,17 @@ export const TodosPage: React.FC = () => {
         onClose={() => {
           setCategoryModalOpen(false);
           setSelectedItemId('');
+        }}
+      />
+      
+      <EditModal
+        isOpen={editModalOpen}
+        title="할 일 수정"
+        initialContent={editingTodo?.content || ''}
+        onSave={handleSaveEdit}
+        onClose={() => {
+          setEditModalOpen(false);
+          setEditingTodo(null);
         }}
       />
     </div>

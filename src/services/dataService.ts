@@ -43,6 +43,7 @@ class DataService {
       tags: [],
     };
     storage.addThought(newThought);
+    this.notifyThoughtsListeners();
     if (this.firestoreService && this.isOnline) {
       try {
         await this.firestoreService.addThought(newThought);
@@ -64,6 +65,7 @@ class DataService {
     };
     
     storage.addTodo(newTodo);
+    this.notifyTodosListeners();
     
     if (this.firestoreService && this.isOnline) {
       try {
@@ -87,6 +89,7 @@ class DataService {
       createdAt: new Date(),
     };
     storage.addRadiologyNote(newNote);
+    this.notifyRadiologyListeners();
     if (this.firestoreService && this.isOnline) {
       try {
         await this.firestoreService.addRadiologyNote(newNote);
@@ -105,6 +108,7 @@ class DataService {
       tags: [],
     };
     storage.addInvestment(newInvestment);
+    this.notifyInvestmentsListeners();
     if (this.firestoreService && this.isOnline) {
       try {
         await this.firestoreService.addInvestment(newInvestment);
@@ -122,6 +126,7 @@ class DataService {
 
   async deleteThought(id: string): Promise<void> {
     storage.deleteThought(id);
+    this.notifyThoughtsListeners();
     if (this.firestoreService) await this.firestoreService.deleteThought(id);
   }
 
@@ -129,8 +134,21 @@ class DataService {
     return this.firestoreService ? this.firestoreService.getTodos() : storage.getTodos();
   }
 
+  async updateThought(id: string, updates: Partial<Thought>): Promise<void> {
+    storage.updateThought(id, updates);
+    this.notifyThoughtsListeners();
+    if (this.firestoreService && this.isOnline) {
+      try {
+        await this.firestoreService.updateThought(id, updates);
+      } catch (error) {
+        console.warn('Failed to update thought in Firebase', error);
+      }
+    }
+  }
+
   async updateTodo(id: string, updates: Partial<Todo>): Promise<void> {
     storage.updateTodo(id, updates);
+    this.notifyTodosListeners();
     if (this.firestoreService) {
       if (getIsGoogleSignedIn() && updates.hasOwnProperty('dueDate')) {
         const currentTodo = await this.firestoreService.getTodoById(id);
@@ -158,6 +176,7 @@ class DataService {
 
   async deleteTodo(id: string): Promise<void> {
     storage.deleteTodo(id);
+    this.notifyTodosListeners();
     if (this.firestoreService) await this.firestoreService.deleteTodo(id);
   }
 
@@ -165,8 +184,21 @@ class DataService {
     return this.firestoreService ? this.firestoreService.getRadiologyNotes() : storage.getRadiologyNotes();
   }
 
+  async updateRadiologyNote(id: string, updates: Partial<RadiologyNote>): Promise<void> {
+    storage.updateRadiologyNote(id, updates);
+    this.notifyRadiologyListeners();
+    if (this.firestoreService && this.isOnline) {
+      try {
+        await this.firestoreService.updateRadiologyNote(id, updates);
+      } catch (error) {
+        console.warn('Failed to update radiology note in Firebase', error);
+      }
+    }
+  }
+
   async deleteRadiologyNote(id: string): Promise<void> {
     storage.deleteRadiologyNote(id);
+    this.notifyRadiologyListeners();
     if (this.firestoreService) await this.firestoreService.deleteRadiologyNote(id);
   }
 
@@ -178,34 +210,104 @@ class DataService {
     return this.firestoreService ? this.firestoreService.getInvestments() : storage.getInvestments();
   }
 
+  async updateInvestment(id: string, updates: Partial<Investment>): Promise<void> {
+    storage.updateInvestment(id, updates);
+    this.notifyInvestmentsListeners();
+    if (this.firestoreService && this.isOnline) {
+      try {
+        await this.firestoreService.updateInvestment(id, updates);
+      } catch (error) {
+        console.warn('Failed to update investment in Firebase', error);
+      }
+    }
+  }
+
   async deleteInvestment(id: string): Promise<void> {
     storage.deleteInvestment(id);
+    this.notifyInvestmentsListeners();
     if (this.firestoreService) await this.firestoreService.deleteInvestment(id);
   }
 
   // Subscriptions
+  private thoughtsListeners: Set<(thoughts: Thought[]) => void> = new Set();
+  
   subscribeToThoughts(callback: (thoughts: Thought[]) => void) {
     if (this.firestoreService) return this.firestoreService.subscribeToThoughts(callback);
+    
+    // For local storage mode, maintain a list of listeners
+    this.thoughtsListeners.add(callback);
     callback(storage.getThoughts());
-    return () => {};
+    
+    return () => {
+      this.thoughtsListeners.delete(callback);
+    };
+  }
+  
+  private notifyThoughtsListeners() {
+    if (this.thoughtsListeners.size > 0) {
+      const thoughts = storage.getThoughts();
+      this.thoughtsListeners.forEach(callback => callback(thoughts));
+    }
   }
 
+  private todosListeners: Set<(todos: Todo[]) => void> = new Set();
+  
   subscribeToTodos(callback: (todos: Todo[]) => void) {
     if (this.firestoreService) return this.firestoreService.subscribeToTodos(callback);
+    
+    this.todosListeners.add(callback);
     callback(storage.getTodos());
-    return () => {};
+    
+    return () => {
+      this.todosListeners.delete(callback);
+    };
+  }
+  
+  private notifyTodosListeners() {
+    if (this.todosListeners.size > 0) {
+      const todos = storage.getTodos();
+      this.todosListeners.forEach(callback => callback(todos));
+    }
   }
 
+  private radiologyListeners: Set<(notes: RadiologyNote[]) => void> = new Set();
+  
   subscribeToRadiologyNotes(callback: (notes: RadiologyNote[]) => void) {
     if (this.firestoreService) return this.firestoreService.subscribeToRadiologyNotes(callback);
+    
+    this.radiologyListeners.add(callback);
     callback(storage.getRadiologyNotes());
-    return () => {};
+    
+    return () => {
+      this.radiologyListeners.delete(callback);
+    };
+  }
+  
+  private notifyRadiologyListeners() {
+    if (this.radiologyListeners.size > 0) {
+      const notes = storage.getRadiologyNotes();
+      this.radiologyListeners.forEach(callback => callback(notes));
+    }
   }
 
+  private investmentsListeners: Set<(investments: Investment[]) => void> = new Set();
+  
   subscribeToInvestments(callback: (investments: Investment[]) => void) {
     if (this.firestoreService) return this.firestoreService.subscribeToInvestments(callback);
+    
+    this.investmentsListeners.add(callback);
     callback(storage.getInvestments());
-    return () => {};
+    
+    return () => {
+      this.investmentsListeners.delete(callback);
+    };
+  }
+  
+  private notifyInvestmentsListeners() {
+    if (this.investmentsListeners.size > 0) {
+      const investments = storage.getInvestments();
+      this.investmentsListeners.forEach(callback => callback(investments));
+    }
   }
 
   // Soft delete for undo functionality
@@ -228,6 +330,7 @@ class DataService {
       const deletedItem = this.deletedItems.get(id);
       if (deletedItem && deletedItem.type === 'thought') {
         storage.addThought(deletedItem.data);
+        this.notifyThoughtsListeners();
         if (this.firestoreService && this.isOnline) {
           try {
             await this.firestoreService.addThought(deletedItem.data);
