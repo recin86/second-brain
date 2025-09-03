@@ -220,7 +220,7 @@ export const InvestmentsPage: React.FC = () => {
                       </div>
                       <button
                         onClick={() => handleDeleteInvestment(investment.id)}
-                        className="absolute top-4 right-4 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-200 text-muted hover:text-red-600 p-1"
+                        className="absolute top-4 right-4 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-200 text-muted hover:text-red-600 p-1 z-20"
                         aria-label="Delete investment"
                       >
                         🗑️

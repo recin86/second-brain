@@ -287,71 +287,31 @@ export const TodosPage: React.FC = () => {
                       <div className="flex flex-col space-y-2 mt-3">
                         <div className="flex items-center justify-between">
                           {!todo.isCompleted && (
-                            <>
+                            <div className="relative">
                               <input
-                                ref={(el) => {
-                                  if (el) {
-                                    (el as any)._todoId = todo.id;
-                                  }
-                                }}
+                                id={`date-${todo.id}`}
                                 type="date"
                                 value={todo.dueDate ? todo.dueDate.toISOString().split('T')[0] : ''}
                                 onChange={(e) => handleSetDueDate(todo.id, e)}
-                                className="sr-only absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                                style={{ 
+                                  WebkitAppearance: 'none',
+                                  appearance: 'none'
+                                }}
                               />
-                              <button
-                                type="button"
-                                className={`relative font-bold px-3 py-1 rounded-xl text-xs transition-colors duration-200 cursor-pointer ${
+                              <label 
+                                htmlFor={`date-${todo.id}`}
+                                className={`block font-bold px-3 py-1 rounded-xl text-xs transition-colors duration-200 cursor-pointer ${
                                   todo.dueDate
                                     ? 'btn-primary text-white'
                                     : 'text-date hover:bg-green-50 border border-gray-200'
                                 }`}
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  const container = e.currentTarget.parentElement;
-                                  const input = container?.querySelector(`input[type="date"]`) as HTMLInputElement;
-                                  if (input) {
-                                    // 모바일 환경 지원을 위한 개선
-                                    try {
-                                      if ('showPicker' in input && typeof input.showPicker === 'function') {
-                                        input.showPicker();
-                                      } else {
-                                        // 모바일에서 더 안정적인 방법
-                                        input.style.position = 'fixed';
-                                        input.style.top = '50%';
-                                        input.style.left = '50%';
-                                        input.style.transform = 'translate(-50%, -50%)';
-                                        input.style.zIndex = '9999';
-                                        input.style.opacity = '0.01';
-                                        input.style.width = '100px';
-                                        input.style.height = '50px';
-                                        
-                                        input.focus();
-                                        input.click();
-                                        
-                                        // 잠시 후 원래 위치로 복원
-                                        setTimeout(() => {
-                                          input.className = "sr-only absolute inset-0 w-full h-full opacity-0 cursor-pointer";
-                                          input.style.cssText = '';
-                                          input.className = "sr-only absolute inset-0 w-full h-full opacity-0 cursor-pointer";
-                                        }, 100);
-                                      }
-                                    } catch (error) {
-                                      // fallback: input을 직접 클릭 가능하도록 설정
-                                      input.style.position = 'static';
-                                      input.style.opacity = '1';
-                                      input.style.width = 'auto';
-                                      input.style.height = 'auto';
-                                      input.focus();
-                                    }
-                                  }
-                                }}
                               >
                                 📅 {todo.dueDate
                                   ? `${t('todos.due')}: ${formatDate(todo.dueDate, { year: 'numeric', month: 'short', day: 'numeric' })}`
                                   : '마감일 지정'}
-                              </button>
-                            </>
+                              </label>
+                            </div>
                           )}
                           <button
                             onClick={() => handleSetPriority(todo.id, todo.priority)}
