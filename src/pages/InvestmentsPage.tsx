@@ -21,19 +21,14 @@ export const InvestmentsPage: React.FC = () => {
   const { toggleCardExpansion, isExpanded } = useCardExpansion();
 
   useEffect(() => {
-    loadInvestments();
-  }, []);
-
-  const loadInvestments = async () => {
-    try {
-      const data = await dataService.getInvestments();
+    // 실시간으로 Investments 데이터 구독
+    const unsubscribe = dataService.subscribeToInvestments((data) => {
       setInvestments(data);
-    } catch (error) {
-      console.error('Failed to load investments:', error);
-    } finally {
       setIsLoading(false);
-    }
-  };
+    });
+    // 컴포넌트 언마운트 시 구독 해제
+    return () => unsubscribe();
+  }, []);
 
 
   const handleDeleteInvestment = async (id: string, skipConfirm = false) => {
@@ -43,8 +38,6 @@ export const InvestmentsPage: React.FC = () => {
     
     try {
       const undoFunction = await dataService.softDeleteInvestment(id);
-      setInvestments(prev => prev.filter(inv => inv.id !== id));
-      
       showUndo('투자 기록이 삭제되었습니다', undoFunction);
     } catch (error) {
       console.error('Failed to delete investment:', error);
@@ -67,7 +60,6 @@ export const InvestmentsPage: React.FC = () => {
           break;
       }
       
-      setInvestments(prev => prev.filter(inv => inv.id !== selectedItemId));
       setCategoryModalOpen(false);
       setSelectedItemId('');
     } catch (error) {
