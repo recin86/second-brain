@@ -22,6 +22,8 @@ export const ThoughtsPage: React.FC = () => {
   const [selectedItemId, setSelectedItemId] = useState<string>('');
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [editingThought, setEditingThought] = useState<Thought | null>(null);
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
+  const [selectedCards, setSelectedCards] = useState<Set<string>>(new Set());
   const { toggleCardExpansion, isExpanded } = useCardExpansion();
 
   useEffect(() => {
@@ -91,7 +93,7 @@ export const ThoughtsPage: React.FC = () => {
 
   const handleCategoryChange = async (newCategory: string) => {
     if (!selectedItemId) return;
-    
+
     try {
       switch (newCategory) {
         case 'todo':
@@ -104,12 +106,58 @@ export const ThoughtsPage: React.FC = () => {
           await dataService.convertToRadiology(selectedItemId, 'thought');
           break;
       }
-      
+
       setCategoryModalOpen(false);
       setSelectedItemId('');
     } catch (error) {
       console.error('Failed to convert category:', error);
     }
+  };
+
+  const handleCardClick = (thoughtId: string) => {
+    if (isSelectionMode) {
+      setSelectedCards(prev => {
+        const newSet = new Set(prev);
+        if (newSet.has(thoughtId)) {
+          newSet.delete(thoughtId);
+          if (newSet.size === 0) {
+            setIsSelectionMode(false);
+          }
+        } else {
+          newSet.add(thoughtId);
+        }
+        return newSet;
+      });
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedCards.size === 0) return;
+
+    if (!window.confirm(`선택한 ${selectedCards.size}개의 항목을 삭제하시겠습니까?`)) {
+      return;
+    }
+
+    try {
+      const deletePromises = Array.from(selectedCards).map(id =>
+        dataService.softDeleteThought(id)
+      );
+      const undoFunctions = await Promise.all(deletePromises);
+
+      showUndo(`${selectedCards.size}개의 생각이 삭제되었습니다`, () => {
+        undoFunctions.forEach(undo => undo());
+      });
+
+      setSelectedCards(new Set());
+      setIsSelectionMode(false);
+    } catch (error) {
+      console.error('Failed to delete selected thoughts:', error);
+    }
+  };
+
+  const exitSelectionMode = () => {
+    setIsSelectionMode(false);
+    setSelectedCards(new Set());
   };
 
   const groupedThoughts = filteredThoughts.reduce((acc, thought) => {
@@ -127,16 +175,38 @@ export const ThoughtsPage: React.FC = () => {
     <div className="max-w-7xl mx-auto px-4 sm:px-8 py-6 sm:py-12">
       <div className="mb-6 sm:mb-8">
         <div className="bg-primary text-white rounded-xl sm:rounded-2xl p-4 sm:p-8 mb-6 sm:mb-8 shadow-lg">
-          <div className="flex items-center mb-4 sm:mb-6">
-            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white/25 rounded-lg mr-3 sm:mr-4 flex items-center justify-center">
-              <span className="text-xl sm:text-2xl">💭</span>
+          <div className="flex items-center justify-between mb-4 sm:mb-6">
+            <div className="flex items-center">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white/25 rounded-lg mr-3 sm:mr-4 flex items-center justify-center">
+                <span className="text-xl sm:text-2xl">💭</span>
+              </div>
+              <div className="min-w-0">
+                <h2 className="text-xl sm:text-3xl font-bold tracking-tight truncate">{t('thoughts.title')}</h2>
+                <p className="opacity-90 text-sm sm:text-lg">
+                  {t('thoughts.subtitle')}
+                </p>
+              </div>
             </div>
-            <div className="min-w-0">
-              <h2 className="text-xl sm:text-3xl font-bold tracking-tight truncate">{t('thoughts.title')}</h2>
-              <p className="opacity-90 text-sm sm:text-lg">
-                {t('thoughts.subtitle')}
-              </p>
-            </div>
+            {isSelectionMode && (
+              <div className="flex items-center space-x-3">
+                <span className="text-white text-sm sm:text-base">
+                  {selectedCards.size}개 선택됨
+                </span>
+                <button
+                  onClick={exitSelectionMode}
+                  className="px-3 py-1 bg-white/20 hover:bg-white/30 rounded-lg text-sm transition-colors"
+                >
+                  취소
+                </button>
+                <button
+                  onClick={handleBulkDelete}
+                  disabled={selectedCards.size === 0}
+                  className="px-3 py-1 bg-red-500 hover:bg-red-600 disabled:bg-gray-500 rounded-lg text-sm transition-colors"
+                >
+                  삭제 ({selectedCards.size})
+                </button>
+              </div>
+            )}
           </div>
           <div className="bg-white/95 rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-md">
             <div className="flex items-center space-x-3">
@@ -202,39 +272,57 @@ export const ThoughtsPage: React.FC = () => {
                         }, { threshold: 100, preventScrollOnSwipe: true });
 
                         const longPress = useLongPress(() => {
-                          setSelectedItemId(thought.id);
-                          setCategoryModalOpen(true);
+                          if (!isSelectionMode) {
+                            setIsSelectionMode(true);
+                            setSelectedCards(new Set([thought.id]));
+                          }
                         }, { threshold: 500 });
                       
                         return (
                           <div
                             key={thought.id}
                             className={`card card-hover relative group transform transition-transform duration-200 ${
-                              swipeGesture.isDragging ? 
+                              swipeGesture.isDragging ?
                                 swipeGesture.swipeDirection === 'left' ? 'bg-red-50 border-red-200' :
                                 swipeGesture.swipeDirection === 'right' ? 'bg-blue-50 border-blue-200' : ''
                                 : ''
+                            } ${
+                              isSelectionMode && selectedCards.has(thought.id) ? 'ring-2 ring-blue-500 bg-blue-50' : ''
                             }`}
                             style={{
-                              transform: swipeGesture.isDragging ? 
-                                `translateX(${Math.min(Math.max(swipeGesture.getSwipeDistance(), -150), 150)}px)` : 
+                              transform: swipeGesture.isDragging ?
+                                `translateX(${Math.min(Math.max(swipeGesture.getSwipeDistance(), -150), 150)}px)` :
                                 'translateX(0)'
                             }}
-                            {...swipeGesture.swipeHandlers}
+                            onClick={() => handleCardClick(thought.id)}
+                            {...(isSelectionMode ? {} : swipeGesture.swipeHandlers)}
                             {...longPress.handlers}
                           >
                             <div className="flex flex-col">
                               <div className="flex items-center justify-between mb-4">
-                                <button
-                                  onClick={() => {
-                                    setSelectedItemId(thought.id);
-                                    setCategoryModalOpen(true);
-                                  }}
-                                  className="badge hover:bg-blue-100 hover:border-blue-300 hover:text-blue-700 transition-colors cursor-pointer"
-                                  title="카테고리 변경"
-                                >
-                                  💭 생각
-                                </button>
+                                <div className="flex items-center space-x-3">
+                                  {isSelectionMode && (
+                                    <input
+                                      type="checkbox"
+                                      checked={selectedCards.has(thought.id)}
+                                      onChange={() => handleCardClick(thought.id)}
+                                      className="w-5 h-5 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+                                    />
+                                  )}
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      if (!isSelectionMode) {
+                                        setSelectedItemId(thought.id);
+                                        setCategoryModalOpen(true);
+                                      }
+                                    }}
+                                    className="badge hover:bg-blue-100 hover:border-blue-300 hover:text-blue-700 transition-colors cursor-pointer"
+                                    title="카테고리 변경"
+                                  >
+                                    💭 생각
+                                  </button>
+                                </div>
                                 <div className="flex items-center space-x-2">
                                   <button
                                     onClick={() => handleEditThought(thought)}

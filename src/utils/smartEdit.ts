@@ -66,22 +66,24 @@ async function convertItemToNewType(
   toType: ItemTypeString,
   classification: ClassificationResult
 ): Promise<void> {
+  let newItemId = itemId;
+
   // Convert to the new type first
   switch (toType) {
     case 'thought':
-      await dataService.convertToThought(itemId, fromType as any);
+      newItemId = await dataService.convertToThought(itemId, fromType as any);
       break;
     case 'todo':
-      await dataService.convertToTodo(itemId, fromType as any);
+      newItemId = await dataService.convertToTodo(itemId, fromType as any);
       break;
     case 'radiology':
-      await dataService.convertToRadiology(itemId, fromType as any);
+      newItemId = await dataService.convertToRadiology(itemId, fromType as any);
       break;
     case 'investment':
-      await dataService.convertToInvestment(itemId, fromType as any);
+      newItemId = await dataService.convertToInvestment(itemId, fromType as any);
       break;
   }
-  
+
   // Then update with the new classification data using the correct target type
-  await updateItemContent(itemId, toType, classification);
+  await updateItemContent(newItemId, toType, classification);
 }

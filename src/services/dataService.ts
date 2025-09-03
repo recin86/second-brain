@@ -428,9 +428,9 @@ class DataService {
   }
 
   // Category conversion functions
-  async convertToThought(id: string, fromType: 'todo' | 'investment' | 'radiology'): Promise<void> {
+  async convertToThought(id: string, fromType: 'todo' | 'investment' | 'radiology'): Promise<string> {
     let sourceData: any;
-    
+
     switch (fromType) {
       case 'todo':
         sourceData = storage.getTodos().find(t => t.id === id);
@@ -447,13 +447,29 @@ class DataService {
     }
 
     if (sourceData) {
-      await this.addThought(sourceData.content);
+      const newThought: Thought = {
+        id: crypto.randomUUID(),
+        content: sourceData.content,
+        createdAt: sourceData.createdAt || new Date(),
+        tags: [],
+      };
+      storage.addThought(newThought);
+      this.notifyThoughtsListeners();
+      if (this.firestoreService && this.isOnline) {
+        try {
+          await this.firestoreService.addThought(newThought);
+        } catch (error) {
+          console.warn('Failed to save converted thought to Firebase', error);
+        }
+      }
+      return newThought.id;
     }
+    return id;
   }
 
-  async convertToTodo(id: string, fromType: 'thought' | 'investment' | 'radiology'): Promise<void> {
+  async convertToTodo(id: string, fromType: 'thought' | 'investment' | 'radiology'): Promise<string> {
     let sourceData: any;
-    
+
     switch (fromType) {
       case 'thought':
         sourceData = storage.getThoughts().find(t => t.id === id);
@@ -470,13 +486,30 @@ class DataService {
     }
 
     if (sourceData) {
-      await this.addTodo(sourceData.content);
+      const newTodo: Todo = {
+        id: crypto.randomUUID(),
+        content: sourceData.content,
+        isCompleted: false,
+        priority: 'medium',
+        createdAt: sourceData.createdAt || new Date(),
+      };
+      storage.addTodo(newTodo);
+      this.notifyTodosListeners();
+      if (this.firestoreService && this.isOnline) {
+        try {
+          await this.firestoreService.addTodo(newTodo);
+        } catch (error) {
+          console.warn('Failed to save converted todo to Firebase', error);
+        }
+      }
+      return newTodo.id;
     }
+    return id;
   }
 
-  async convertToInvestment(id: string, fromType: 'thought' | 'todo' | 'radiology'): Promise<void> {
+  async convertToInvestment(id: string, fromType: 'thought' | 'todo' | 'radiology'): Promise<string> {
     let sourceData: any;
-    
+
     switch (fromType) {
       case 'thought':
         sourceData = storage.getThoughts().find(t => t.id === id);
@@ -493,13 +526,29 @@ class DataService {
     }
 
     if (sourceData) {
-      await this.addInvestment(sourceData.content);
+      const newInvestment: Investment = {
+        id: crypto.randomUUID(),
+        content: sourceData.content,
+        createdAt: sourceData.createdAt || new Date(),
+        tags: [],
+      };
+      storage.addInvestment(newInvestment);
+      this.notifyInvestmentsListeners();
+      if (this.firestoreService && this.isOnline) {
+        try {
+          await this.firestoreService.addInvestment(newInvestment);
+        } catch (error) {
+          console.warn('Failed to save converted investment to Firebase', error);
+        }
+      }
+      return newInvestment.id;
     }
+    return id;
   }
 
-  async convertToRadiology(id: string, fromType: 'thought' | 'todo' | 'investment'): Promise<void> {
+  async convertToRadiology(id: string, fromType: 'thought' | 'todo' | 'investment'): Promise<string> {
     let sourceData: any;
-    
+
     switch (fromType) {
       case 'thought':
         sourceData = storage.getThoughts().find(t => t.id === id);
@@ -516,8 +565,24 @@ class DataService {
     }
 
     if (sourceData) {
-      await this.addRadiologyNote(sourceData.content, ['#rad']);
+      const newNote: RadiologyNote = {
+        id: crypto.randomUUID(),
+        content: sourceData.content,
+        tags: ['#rad'],
+        createdAt: sourceData.createdAt || new Date(),
+      };
+      storage.addRadiologyNote(newNote);
+      this.notifyRadiologyListeners();
+      if (this.firestoreService && this.isOnline) {
+        try {
+          await this.firestoreService.addRadiologyNote(newNote);
+        } catch (error) {
+          console.warn('Failed to save converted radiology note to Firebase', error);
+        }
+      }
+      return newNote.id;
     }
+    return id;
   }
 
   // Clean up old deleted items (called periodically)

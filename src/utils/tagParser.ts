@@ -12,10 +12,10 @@ export const isRadiologyNote = (content: string): boolean => {
 export const getRadiologySubtags = (content: string): string[] => {
   const tags = extractTags(content);
   const radIndex = tags.findIndex(tag => tag === '#rad');
-  
+
   if (radIndex === -1) return [];
-  
-  // #Rad 이후의 모든 태그들을 반환
+
+  // #Rad 이후의 모든 태그들을 반환 (Find all tags after #rad, regardless of position)
   return tags.slice(radIndex + 1);
 };
 
