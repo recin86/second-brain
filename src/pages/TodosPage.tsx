@@ -297,17 +297,11 @@ export const TodosPage: React.FC = () => {
                                 type="date"
                                 value={todo.dueDate ? todo.dueDate.toISOString().split('T')[0] : ''}
                                 onChange={(e) => handleSetDueDate(todo.id, e)}
-                                style={{
-                                  position: 'absolute',
-                                  left: '-9999px',
-                                  width: '1px',
-                                  height: '1px',
-                                  opacity: 0
-                                }}
+                                className="sr-only absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                               />
                               <button
                                 type="button"
-                                className={`font-bold px-3 py-1 rounded-xl text-xs transition-colors duration-200 cursor-pointer ${
+                                className={`relative font-bold px-3 py-1 rounded-xl text-xs transition-colors duration-200 cursor-pointer ${
                                   todo.dueDate
                                     ? 'btn-primary text-white'
                                     : 'text-date hover:bg-green-50 border border-gray-200'
@@ -317,11 +311,38 @@ export const TodosPage: React.FC = () => {
                                   const container = e.currentTarget.parentElement;
                                   const input = container?.querySelector(`input[type="date"]`) as HTMLInputElement;
                                   if (input) {
-                                    if (input.showPicker) {
-                                      input.showPicker();
-                                    } else {
+                                    // 모바일 환경 지원을 위한 개선
+                                    try {
+                                      if ('showPicker' in input && typeof input.showPicker === 'function') {
+                                        input.showPicker();
+                                      } else {
+                                        // 모바일에서 더 안정적인 방법
+                                        input.style.position = 'fixed';
+                                        input.style.top = '50%';
+                                        input.style.left = '50%';
+                                        input.style.transform = 'translate(-50%, -50%)';
+                                        input.style.zIndex = '9999';
+                                        input.style.opacity = '0.01';
+                                        input.style.width = '100px';
+                                        input.style.height = '50px';
+                                        
+                                        input.focus();
+                                        input.click();
+                                        
+                                        // 잠시 후 원래 위치로 복원
+                                        setTimeout(() => {
+                                          input.className = "sr-only absolute inset-0 w-full h-full opacity-0 cursor-pointer";
+                                          input.style.cssText = '';
+                                          input.className = "sr-only absolute inset-0 w-full h-full opacity-0 cursor-pointer";
+                                        }, 100);
+                                      }
+                                    } catch (error) {
+                                      // fallback: input을 직접 클릭 가능하도록 설정
+                                      input.style.position = 'static';
+                                      input.style.opacity = '1';
+                                      input.style.width = 'auto';
+                                      input.style.height = 'auto';
                                       input.focus();
-                                      input.click();
                                     }
                                   }
                                 }}
